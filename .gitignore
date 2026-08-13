@@ -1,0 +1,22 @@
+# Secretos y credenciales — NUNCA versionar
+.env
+.env.*
+!.env.example
+flyway.conf
+!flyway.conf.example
+*.env
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+._*
+
+# Editores
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs y artefactos
+*.log
+*.tmp

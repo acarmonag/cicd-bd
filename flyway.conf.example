@@ -1,0 +1,13 @@
+# Copia este archivo a flyway.conf y completa tus credenciales.
+# flyway.conf está en .gitignore — NUNCA hagas commit con credenciales reales.
+#
+# Obtén el connection string desde Neon.tech → tu proyecto → branch dev o main
+# Formato: jdbc:postgresql://<host>/<dbname>?sslmode=require
+
+flyway.url=jdbc:postgresql://<host>/<dbname>?sslmode=require
+flyway.user=<usuario>
+flyway.password=<contraseña>
+flyway.locations=filesystem:migrations
+flyway.outOfOrder=false
+flyway.cleanDisabled=true
+flyway.validateMigrationNaming=true
