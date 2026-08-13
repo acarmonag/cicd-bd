@@ -29,7 +29,8 @@ cicd-bd/
 │   ├── V20260801090000__baseline_torneo.sql    # Esquema base completo
 │   ├── V20260802100000__add_matches.sql        # Tabla matches
 │   ├── V20260803143000__add_match_scores.sql   # Tabla match_scores
-│   ├── V20260804160000__add_audit_constraints.sql
+│   ├── V20260804160000__add_audit_constraints.sql  # CHECKs + índices
+│   ├── V20260806090000__add_referees.sql       # Tabla referees + matches.referee_id
 │   └── R__vw_tournament_standings.sql          # Vista repetible
 ├── flyway.conf.example                         # Plantilla local sin credenciales
 └── README.md

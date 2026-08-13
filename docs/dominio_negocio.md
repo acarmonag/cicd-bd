@@ -54,12 +54,21 @@ erDiagram
         text      format
     }
 
+    referees {
+        serial id           PK
+        text   first_name
+        text   last_name
+        text   nationality
+        date   certified_at
+    }
+
     matches {
         serial    id            PK
         integer   tournament_id FK
         integer   home_team_id  FK
         integer   away_team_id  FK
         integer   venue_id      FK
+        integer   referee_id    FK
         timestamp scheduled_at
         text      status
     }
@@ -79,6 +88,7 @@ erDiagram
     teams       ||--o{ matches     : "juega como visitante"
     tournaments ||--o{ matches     : "contiene"
     venues      ||--o{ matches     : "alberga"
+    referees    ||--o{ matches     : "arbitra"
     matches     ||--o| match_scores : "registra"
 ```
 
@@ -101,8 +111,11 @@ Jugadores pertenecientes a un equipo. `jersey_number` tiene restricción 1–99.
 ### `tournaments`
 Torneos organizados por deporte y temporada. `format` define la modalidad: liga, copa o fase de grupos con eliminatorias.
 
+### `referees`
+Árbitros disponibles para dirigir partidos. `certified_at` registra la fecha de certificación. Añadida en la migración `V20260806090000`.
+
 ### `matches`
-Partidos entre dos equipos dentro de un torneo. `status` controla el ciclo de vida: scheduled → in_progress → finished / cancelled. Restricción: `home_team_id <> away_team_id`.
+Partidos entre dos equipos dentro de un torneo. `status` controla el ciclo de vida: scheduled → in_progress → finished / cancelled. Restricción: `home_team_id <> away_team_id`. La columna `referee_id` (nullable) se añadió en `V20260806090000` — un partido programado puede no tener árbitro asignado todavía.
 
 ### `match_scores`
 Marcador final de un partido. Relación 1:1 con `matches` — solo existe para partidos finalizados.
