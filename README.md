@@ -1,7 +1,8 @@
-# cicd-bd — CI/CD en Base de Datos con Flyway
+# cicd-bd — DataOps sobre un sistema de torneos deportivos
 
-Módulo **Tendencias emergentes en desarrollo de software** (SI6010-5979) · Momento 1  
-Stack: **Neon.tech** (PostgreSQL) · **Flyway** · **GitHub Actions**  
+Módulo **Tendencias emergentes en desarrollo de software** (SI6010-5979) · Momentos 1 y 2  
+Stack M1: **Neon.tech** (PostgreSQL) · **Flyway** · **GitHub Actions**  
+Stack M2: **Snowflake** · **Python + `uv`** · **S3 External Stage** · **Tasks** · **RBAC + Masking**  
 Dominio: Sistema de gestión de torneos deportivos
 
 ---
@@ -20,21 +21,48 @@ Dominio: Sistema de gestión de torneos deportivos
 
 ```
 cicd-bd/
-├── .github/workflows/flyway-migrate.yml       # CI/CD automático
+├── .github/workflows/flyway-migrate.yml       # CI/CD automático (Momento 1)
 ├── docs/
-│   ├── evidencias/                             # Capturas de runs exitoso y fallido
-│   └── dominio_negocio.md                      # Descripción + diagrama ER
-├── migrations/
-│   ├── V20260801070000__cleanup_legacy.sql     # Limpieza esquema previo
-│   ├── V20260801090000__baseline_torneo.sql    # Esquema base completo
-│   ├── V20260802100000__add_matches.sql        # Tabla matches
-│   ├── V20260803143000__add_match_scores.sql   # Tabla match_scores
-│   ├── V20260804160000__add_audit_constraints.sql  # CHECKs + índices
-│   ├── V20260806090000__add_referees.sql       # Tabla referees + matches.referee_id
-│   └── R__vw_tournament_standings.sql          # Vista repetible
+│   ├── evidencias/                             # Capturas M1 + evidencias momento2/
+│   ├── dominio_negocio.md                      # Descripción + diagrama ER
+│   ├── decisiones_momento2.md                  # E8: fuente JSON elegida, estrategia de roles
+│   └── presentacion_momento2.html              # Diapositivas de la sustentación
+├── migrations/                                 # Migraciones Flyway (Momento 1)
+├── ingesta/                                    # E2: ELT relacional con uv
+│   ├── pyproject.toml / uv.lock                #   dependencias reproducibles
+│   ├── elt_neon_to_snowflake.py                #   extracción + detección de drift
+│   └── seed_neon.py                            #   datos demo de la temporada 2026
+├── snowflake/
+│   ├── setup/01_setup_snowflake.sql            # E1: warehouse, schemas, rol de servicio
+│   ├── json/01_file_format_stage.sql           # E4: File Format + External Stage + COPY
+│   ├── json/02_flatten_staging.sql             # E4: LATERAL FLATTEN -> STG_VENTAS_TICKETS
+│   ├── tasks/01_dag_tasks.sql                  # E5: DAG raíz + hija, ciclo de vida
+│   └── governance/01_rbac.sql · 02_masking.sql # E6: roles de negocio + masking
+├── data/ticketing/                             # Exports JSON de TicketAndes (+ generador)
+├── .env.example                                # E7: plantilla sin credenciales
 ├── flyway.conf.example                         # Plantilla local sin credenciales
 └── README.md
 ```
+
+---
+
+## Momento 2 — Cloud Data Warehouse e ingesta
+
+Dos caminos de ingesta hacia `TORNEOS_DB` en Snowflake:
+
+1. **Relacional** (Neon → `RAW`): `cd ingesta && uv sync && cp ../.env.example ../.env`
+   (completar credenciales) y `uv run elt_neon_to_snowflake.py`. Detecta **schema
+   drift** antes de cargar y propone el DDL de roll-forward
+   ([evidencia](docs/evidencias/momento2/schema_drift.md)).
+2. **Semi-estructurado** (S3 → `RAW_JSON` → `STAGING`): exports JSON del proveedor de
+   ticketing con array anidado `tickets`, vía External Stage a `VARIANT` y
+   `LATERAL FLATTEN` ([evidencia](docs/evidencias/momento2/ingesta_json.md)).
+
+La actualización la orquesta un **DAG de Snowflake Tasks**
+([evidencia](docs/evidencias/momento2/task_history.md)) y la PII de compradores queda
+protegida con **RBAC + Dynamic Data Masking**
+([evidencia](docs/evidencias/momento2/rbac_masking.md)). Las decisiones están
+argumentadas en [docs/decisiones_momento2.md](docs/decisiones_momento2.md).
 
 ---
 
