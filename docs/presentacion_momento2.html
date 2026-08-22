@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Torneos en el Warehouse</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* ------------------------------------------------------------------
+     Marcador de estadio nocturno — tema único, deliberado.
+     Todos los colores se pintan explícitos: la página sostiene su propio
+     fondo sobre cualquier host, claro u oscuro.
+  ------------------------------------------------------------------ */
+  :root{
+    --campo:      #0b1512;   /* verde-negro, césped de noche          */
+    --tablero:    #122019;   /* superficie de paneles                 */
+    --tablero-2:  #16281f;   /* superficie elevada                    */
+    --linea:      #26402f;   /* líneas de cal, atenuadas              */
+    --cal:        #eef5ee;   /* texto principal, blanco de cal        */
+    --gris:       #9db3a2;   /* texto secundario                      */
+    --ambar:      #f2b63c;   /* foco/acento: luz de reflector         */
+    --ambar-dim:  #b9862a;
+    --ok:         #62c98d;   /* semántico consola                     */
+    --err:        #e8756a;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --sans: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    --disp: "Archivo", "Arial Narrow", Impact, sans-serif;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background: var(--campo);
+    color: var(--cal);
+    font-family: var(--sans);
+    font-size: clamp(14px, 1.35vw, 19px);
+    line-height: 1.55;
+    overflow: hidden;
+  }
+  /* césped: bandas sutilísimas, como un campo segado */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none;
+    background: repeating-linear-gradient(90deg,
+      rgba(255,255,255,.012) 0 7vw, rgba(0,0,0,.05) 7vw 14vw);
+  }
+
+  .deck{ height:100%; position:relative; }
+  .slide{
+    position:absolute; inset:0;
+    display:none;
+    flex-direction:column;
+    padding: clamp(1.4rem, 4.5vh, 3.2rem) clamp(1.4rem, 5vw, 4.5rem) 4rem;
+    overflow:auto;
+  }
+  .slide.activa{ display:flex; animation: entra .28s ease-out; }
+  @keyframes entra{ from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:none;} }
+  @media (prefers-reduced-motion: reduce){ .slide.activa{ animation:none; } }
+
+  /* ---- cabecera de cada slide: eyebrow tipo rótulo de tablero ---- */
+  .kicker{
+    font-family:var(--mono); font-size:.72em; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--ambar);
+    display:flex; align-items:center; gap:.8em; margin-bottom:1.1em;
+  }
+  .kicker::after{ content:""; flex:1; height:1px; background:var(--linea); }
+  h1,h2{ font-family:var(--disp); text-wrap:balance; }
+  h1{
+    font-weight:900; font-stretch:115%;
+    font-size:clamp(2.4rem, 7.2vw, 5.4rem);
+    line-height:1.02; letter-spacing:-.01em; text-transform:uppercase;
+  }
+  h2{
+    font-weight:800; font-stretch:110%;
+    font-size:clamp(1.5rem, 3.6vw, 2.7rem);
+    line-height:1.08; margin-bottom:.7em;
+  }
+  .sub{ color:var(--gris); max-width:34em; }
+  .amber{ color:var(--ambar); }
+  strong{ color:var(--cal); font-weight:600; }
+
+  .cuerpo{ flex:1; display:flex; flex-direction:column; justify-content:center; min-height:0; }
+  .cols{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(1rem,3vw,2.6rem); align-items:start; }
+  @media (max-width:760px){ .cols{ grid-template-columns:1fr; } }
+
+  /* ---- paneles ---- */
+  .panel{
+    background:var(--tablero); border:1px solid var(--linea);
+    border-radius:10px; padding:1em 1.2em;
+  }
+  .panel + .panel{ margin-top:.8em; }
+  .panel h3{
+    font-family:var(--mono); font-size:.7em; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--gris); margin-bottom:.6em;
+  }
+  ul.lista{ list-style:none; }
+  ul.lista li{ padding:.34em 0 .34em 1.4em; position:relative; }
+  ul.lista li::before{
+    content:"▸"; position:absolute; left:.2em; color:var(--ambar);
+  }
+
+  code, pre{ font-family:var(--mono); }
+  code{ background:var(--tablero-2); border:1px solid var(--linea);
+        border-radius:5px; padding:.08em .4em; font-size:.88em; }
+  pre{
+    background:#081009; border:1px solid var(--linea); border-radius:10px;
+    padding:1em 1.2em; font-size:clamp(.62rem, 1.05vw, .85rem);
+    line-height:1.5; overflow-x:auto; color:#cfe3d2;
+  }
+  pre .c{ color:#6f8b76; }         /* comentario   */
+  pre .k{ color:var(--ambar); }    /* keyword      */
+  pre .s{ color:#9fd0ff; }         /* string/ident */
+  pre .ok{ color:var(--ok); }
+  pre .err{ color:var(--err); }
+
+  table{ border-collapse:collapse; width:100%; font-size:.92em; }
+  th,td{ text-align:left; padding:.45em .8em; border-bottom:1px solid var(--linea); }
+  th{ font-family:var(--mono); font-size:.72em; letter-spacing:.12em;
+      text-transform:uppercase; color:var(--gris); }
+  td{ font-variant-numeric: tabular-nums; }
+  .num{ font-variant-numeric: tabular-nums; }
+
+  /* ---- chips / marcador ---- */
+  .chips{ display:flex; flex-wrap:wrap; gap:.5em; }
+  .chip{
+    font-family:var(--mono); font-size:.72em; letter-spacing:.06em;
+    border:1px solid var(--linea); border-radius:999px;
+    padding:.3em .9em; color:var(--gris); background:var(--tablero);
+  }
+  .chip.on{ color:var(--campo); background:var(--ambar); border-color:var(--ambar); font-weight:500; }
+
+  .marcador{
+    display:flex; gap:1.2em; flex-wrap:wrap; margin:1.2em 0;
+  }
+  .cifra{
+    background:var(--tablero); border:1px solid var(--linea); border-radius:10px;
+    padding:.7em 1.1em; min-width:7.5em;
+  }
+  .cifra b{
+    display:block; font-family:var(--disp); font-weight:900; font-stretch:110%;
+    font-size:2em; color:var(--ambar); font-variant-numeric:tabular-nums; line-height:1.1;
+  }
+  .cifra span{ font-family:var(--mono); font-size:.66em; letter-spacing:.12em;
+               text-transform:uppercase; color:var(--gris); }
+
+  /* ---- diagrama de flujo simple ---- */
+  .flujo{ display:flex; align-items:stretch; gap:.6em; flex-wrap:wrap; }
+  .nodo{
+    background:var(--tablero-2); border:1px solid var(--linea); border-radius:10px;
+    padding:.7em 1em; text-align:center; flex:1; min-width:8em;
+  }
+  .nodo b{ display:block; font-family:var(--mono); font-size:.82em; color:var(--cal); }
+  .nodo span{ font-size:.74em; color:var(--gris); }
+  .nodo.acc{ border-color:var(--ambar-dim); }
+  .nodo.acc b{ color:var(--ambar); }
+  .flecha{ align-self:center; color:var(--ambar); font-size:1.3em; }
+
+  /* ---- pie: navegación tipo marcador ---- */
+  .pie{
+    position:fixed; left:0; right:0; bottom:0;
+    display:flex; align-items:center; gap:1em;
+    padding:.55em clamp(1.4rem,5vw,4.5rem);
+    font-family:var(--mono); font-size:.72rem; color:var(--gris);
+    background:linear-gradient(transparent, rgba(8,14,10,.92) 40%);
+    z-index:5;
+  }
+  .pie .partido{ letter-spacing:.1em; text-transform:uppercase; }
+  .pie .tanteo{ margin-left:auto; color:var(--ambar); letter-spacing:.15em; }
+  .barra{ position:fixed; top:0; left:0; height:3px; background:var(--ambar); z-index:6;
+          transition:width .25s ease; }
+  .zona{ position:fixed; top:0; bottom:0; width:14vw; z-index:4; cursor:pointer; }
+  .zona.izq{ left:0; } .zona.der{ right:0; }
+  .ayuda{ position:fixed; right:clamp(1.4rem,5vw,4.5rem); top:1em; z-index:5;
+          font-family:var(--mono); font-size:.68rem; color:var(--gris); opacity:.75; }
+  :focus-visible{ outline:2px solid var(--ambar); outline-offset:3px; }
+
+  .firma{ display:flex; gap:2.4em; flex-wrap:wrap; margin-top:2em; }
+  .firma div b{ display:block; font-weight:600; }
+  .firma div span{ font-family:var(--mono); font-size:.74em; color:var(--gris); }
+  .nota{ font-size:.85em; color:var(--gris); margin-top:1em; }
+  .dosfilas{ display:grid; gap: .9em; }
+</style>
+</head>
+<body>
+<div class="barra" id="barra"></div>
+<div class="ayuda">← → o clic para navegar</div>
+
+<div class="deck" id="deck">
+
+<!-- 1 · Portada ==================================================== -->
+<section class="slide">
+  <div class="cuerpo">
+    <div class="kicker">Momento 2 · Cloud Data Warehouse e Ingesta · 22-08-2026</div>
+    <h1>El torneo entra<br>al <span class="amber">warehouse</span></h1>
+    <p class="sub" style="margin-top:1em">Dos caminos de ingesta hacia Snowflake para el sistema de
+      torneos deportivos del Momento 1 — operados con Tasks y protegidos con RBAC y masking.</p>
+    <div class="chips" style="margin-top:1.6em">
+      <span class="chip on">Snowflake</span><span class="chip">Neon · PostgreSQL</span>
+      <span class="chip">Python + uv</span><span class="chip">S3 External Stage</span>
+      <span class="chip">Tasks</span><span class="chip">RBAC + Masking</span>
+    </div>
+    <div class="firma">
+      <div><b>Antonio Carmona</b><span>@acarmonag</span></div>
+      <div><b>Miguel Quijano</b><span>@mquijanoj09</span></div>
+      <div><b>Andrés Prada</b><span>@Pradita777</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · El encargo ================================================= -->
+<section class="slide">
+  <div class="kicker">El encargo</div>
+  <div class="cuerpo">
+    <h2>La liga ya opera en Neon.<br>El análisis no puede vivir ahí.</h2>
+    <div class="cols">
+      <div>
+        <p>El Momento 1 dejó la base transaccional del torneo versionada con Flyway y
+        desplegada por CI/CD. Pero las queries analíticas pesadas degradan el sistema
+        operacional — y no todo dato del negocio vive en esa base: <strong>la venta de
+        boletas ocurre en la plataforma de un tercero.</strong></p>
+        <p class="nota">El encargo: construir ambos caminos de ingesta hacia Snowflake y
+        dejar el resultado operable y protegido.</p>
+      </div>
+      <div class="panel">
+        <h3>Las 4 preguntas que respondemos hoy</h3>
+        <ul class="lista">
+          <li>¿Cómo llegan los datos de Neon a Snowflake, y <strong>quién</strong> ejecuta ese proceso?</li>
+          <li>¿Qué pasa si la fuente relacional <strong>cambia de esquema sin avisar</strong>?</li>
+          <li>¿Cómo entra un dato <strong>sin esquema fijo</strong>, y qué se hace con él?</li>
+          <li>¿<strong>Quién puede ver qué</strong>, y por qué no "todos ven todo"?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · Arquitectura =============================================== -->
+<section class="slide">
+  <div class="kicker">E1 · Arquitectura como código</div>
+  <div class="cuerpo">
+    <h2>Un schema por dominio, un rol por trabajo</h2>
+    <div class="cols">
+      <div class="dosfilas">
+        <div class="flujo">
+          <div class="nodo"><b>NEON dev</b><span>9 tablas del torneo</span></div>
+          <div class="flecha">→</div>
+          <div class="nodo acc"><b>RAW</b><span>relacional, sin transformar</span></div>
+        </div>
+        <div class="flujo">
+          <div class="nodo"><b>S3 TicketAndes</b><span>exports JSON</span></div>
+          <div class="flecha">→</div>
+          <div class="nodo acc"><b>RAW_JSON</b><span>VARIANT</span></div>
+          <div class="flecha">→</div>
+          <div class="nodo acc"><b>STAGING</b><span>aplanado y tipado</span></div>
+        </div>
+        <p class="nota">Todo <code>TORNEOS_DB</code>, sobre <code>WH_TORNEOS</code>
+        (XSMALL, auto-suspend 60 s: Snowflake cobra por segundo activo).
+        Setup completo en <code>snowflake/setup/</code> — reproducible, cero clics en la UI.</p>
+      </div>
+      <div class="panel">
+        <h3>Separación de poderes</h3>
+        <table>
+          <tr><th>Rol</th><th>Trabajo</th></tr>
+          <tr><td><code>TORNEOS_LOADER</code></td><td>servicio: ELT + Tasks. Jamás <code>ACCOUNTADMIN</code></td></tr>
+          <tr><td><code>ROLE_ANALISTA_DEPORTIVO</code></td><td>lee RAW + STAGING, PII enmascarada</td></tr>
+          <tr><td><code>ROLE_GERENCIA_COMERCIAL</code></td><td>solo STAGING, ve la PII de clientes</td></tr>
+        </table>
+        <p class="nota">Una credencial filtrada del loader compromete unas tablas;
+        una de <code>ACCOUNTADMIN</code>, la cuenta entera.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · Ingesta relacional ========================================= -->
+<section class="slide">
+  <div class="kicker">E2 · Ingesta relacional</div>
+  <div class="cuerpo">
+    <h2>ELT con <span class="amber">uv</span>: Neon → RAW en una corrida</h2>
+    <div class="cols">
+      <div>
+        <div class="marcador">
+          <div class="cifra"><b>9</b><span>tablas</span></div>
+          <div class="cifra"><b>223</b><span>filas cargadas</span></div>
+          <div class="cifra"><b>0</b><span>inserts fila a fila</span></div>
+        </div>
+        <ul class="lista">
+          <li><code>pyproject.toml</code> + <code>uv.lock</code>: el entorno es reproducible en las tres máquinas del equipo.</li>
+          <li><code>write_pandas</code>: carga masiva por stage interno, no <code>INSERT</code> por fila.</li>
+          <li><code>SELECT *</code> a propósito: la extracción no sabe del negocio — sobrevive a columnas nuevas.</li>
+          <li>Conexión con contexto explícito (warehouse, db, schema, <strong>rol</strong>): reproducible entre máquinas.</li>
+        </ul>
+      </div>
+      <pre>$ <span class="s">uv run elt_neon_to_snowflake.py</span>
+Extrayendo matches desde Neon...
+  19 filas · columnas: ['ID','TOURNAMENT_ID','HOME_TEAM_ID',
+                        'AWAY_TEAM_ID','VENUE_ID','SCHEDULED_AT',
+                        'STATUS','REFEREE_ID']
+  <span class="ok">OK -> 19 filas en RAW.MATCHES</span>
+Extrayendo match_events desde Neon...
+  94 filas · columnas: ['ID','MATCH_ID','PLAYER_ID',
+                        'EVENT_TYPE','MINUTE','DETAIL','CREATED_AT']
+  <span class="ok">OK -> 94 filas en RAW.MATCH_EVENTS</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · Schema drift =============================================== -->
+<section class="slide">
+  <div class="kicker">E3 · Schema drift — caso provocado y corregido</div>
+  <div class="cuerpo">
+    <h2>Backend agregó <code style="font-size:.8em">attendance</code> sin avisar.<br>El pipeline lo contó antes de romperse.</h2>
+    <div class="cols">
+      <pre><span class="c">-- el "backend" (nosotros), directo en Neon dev:</span>
+<span class="k">ALTER TABLE</span> matches <span class="k">ADD COLUMN</span> attendance INTEGER;
+
+$ <span class="s">uv run elt_neon_to_snowflake.py --tabla matches</span>
+<span class="err">ERROR:
+Schema drift detectado en MATCHES: la fuente en Neon
+trae columna(s) nueva(s) que Snowflake no tiene
+todavía: ['ATTENDANCE'].</span>
+
+Aplica esto en un Worksheet y vuelve a correr:
+<span class="k">ALTER TABLE</span> MATCHES <span class="k">ADD COLUMN</span> "ATTENDANCE" FLOAT;</pre>
+      <div>
+        <ul class="lista">
+          <li>La comparación (DataFrame vs. <code>information_schema.columns</code>) corre <strong>antes</strong> de <code>write_pandas</code>: Snowflake nunca se tocó.</li>
+          <li>Mensaje <strong>accionable</strong>: tabla, columna y el DDL de roll-forward ya redactado — no un <code>invalid identifier</code> críptico tres capas abajo.</li>
+          <li>El DDL <strong>se muestra, no se auto-ejecuta</strong>: alterar el warehouse sin revisión es su propio riesgo.</li>
+          <li>Aplicado el ALTER, la re-corrida cargó <span class="num">19</span> filas <strong>sin tocar una línea de código</strong>.</li>
+        </ul>
+        <p class="nota">Mismo criterio que Flyway en el Momento 1: <strong>detectar antes de fallar</strong>.
+        ¿Por qué FLOAT? Los partidos no jugados traen NULL y pandas representa enteros anulables como float64 — el tipado fino es de capas posteriores.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · La fuente JSON ============================================= -->
+<section class="slide">
+  <div class="kicker">E4 · La segunda fuente</div>
+  <div class="cuerpo">
+    <h2>TicketAndes: la boletería vive<br>fuera de nuestro sistema</h2>
+    <div class="cols">
+      <div>
+        <p>Exports semanales del proveedor de ticketing — órdenes de compra de boletas
+        para los partidos. <strong>No existe en el modelo relacional</strong> del Momento 1:
+        es el proceso de un tercero.</p>
+        <ul class="lista" style="margin-top:.8em">
+          <li>Array anidado <code>tickets</code>: una orden compra 1–4 boletas → la pregunta de negocio se responde <strong>por boleta</strong>.</li>
+          <li>Claves que no siempre vienen: <code>buyer.phone</code> (~⅓ no lo da), <code>section</code> (palcos), <code>installments</code> (solo tarjeta).</li>
+          <li>Un proveedor externo <strong>no negocia su esquema contigo</strong> → schema-on-read.</li>
+        </ul>
+      </div>
+      <pre>{
+  "order_id": <span class="s">"TKA-20260807-0002"</span>,
+  "match":  { "match_id": 14, "external_ref": <span class="s">"LMF2026-M14"</span> },
+  "buyer":  { "full_name": <span class="s">"Isabela Franco"</span>,
+              "email": <span class="s">"isabela.franco@hotmail.com"</span>,
+              "phone": <span class="s">"+57 302 815 2965"</span> },   <span class="c">← PII</span>
+  "payment":{ "method": <span class="s">"tarjeta_credito"</span>, "total_usd": 246.0 },
+  "tickets": [                              <span class="c">← array anidado</span>
+    { "ticket_code": <span class="s">"…-0002-1"</span>, "category": <span class="s">"preferencial"</span>,
+      "section": <span class="s">"Norte"</span>, "row": <span class="s">"K"</span>, "seat": 23, "price_usd": 82.0 },
+    { "ticket_code": <span class="s">"…-0002-2"</span>, <span class="c">/* palco: sin "section" */</span> … }
+  ]
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · External Stage ============================================= -->
+<section class="slide">
+  <div class="kicker">E4 · External Stage + VARIANT</div>
+  <div class="cuerpo">
+    <h2>Schema-on-read: el JSON aterriza<br>sin esquema previo</h2>
+    <div class="cols">
+      <pre><span class="k">CREATE FILE FORMAT</span> FF_TICKETING_JSON
+  TYPE = JSON  <span class="k">STRIP_OUTER_ARRAY</span> = TRUE;  <span class="c">-- [ {…}, {…} ]</span>
+
+<span class="k">CREATE STAGE</span> STG_TICKETING_S3
+  URL = <span class="s">'s3://s3-tournamet-test-eafit/'</span>
+  FILE_FORMAT = FF_TICKETING_JSON;    <span class="c">-- referencia, no copia</span>
+
+<span class="k">COPY INTO</span> RAW_TICKETING (RAW_DATA, ARCHIVO)
+FROM (<span class="k">SELECT</span> $1, METADATA$FILENAME <span class="k">FROM</span> @STG_TICKETING_S3)
+<span class="k">PATTERN</span> = <span class="s">'.*ticketing_export_.*[.]json'</span>
+FILE_FORMAT = (FORMAT_NAME = FF_TICKETING_JSON);</pre>
+      <div>
+        <ul class="lista">
+          <li><code>LIST @stage</code> y <code>SELECT $1</code> exploran <strong>antes</strong> de cargar — sin mover nada.</li>
+          <li>Tabla de una sola columna <code>VARIANT</code> + metadatos de auditoría (<code>ARCHIVO</code>, <code>CARGADO_EN</code>).</li>
+          <li><code>COPY INTO</code> es <strong>idempotente</strong>: re-ejecutado carga 0 filas — por eso puede correr a diario.</li>
+        </ul>
+        <div class="panel" style="margin-top:1em">
+          <h3>Herida de guerra (real)</h3>
+          <p style="font-size:.9em">El bucket compartido tenía un <strong>PDF ajeno</strong>; el primer
+          <code>COPY</code> murió con <em>“Error parsing JSON… .pdf”</em>.
+          El <code>PATTERN</code> no es adorno: <strong>es parte del contrato de ingesta</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · FLATTEN ==================================================== -->
+<section class="slide">
+  <div class="kicker">E4 · LATERAL FLATTEN</div>
+  <div class="cuerpo">
+    <h2>28 órdenes → <span class="amber">74 boletas</span></h2>
+    <div class="cols">
+      <pre><span class="k">SELECT</span>
+  RAW_DATA:order_id::STRING        <span class="k">AS</span> ORDER_ID,
+  RAW_DATA:buyer.email::STRING     <span class="k">AS</span> COMPRADOR_EMAIL,
+  boleta.value:section::STRING     <span class="k">AS</span> SECCION,  <span class="c">-- NULL en palcos</span>
+  boleta.value:price_usd::FLOAT    <span class="k">AS</span> PRECIO_USD
+<span class="k">FROM</span> RAW_TICKETING,
+     <span class="k">LATERAL FLATTEN</span>(input => RAW_DATA:tickets) boleta;
+<span class="c">-- materializado en STAGING.STG_VENTAS_TICKETS</span></pre>
+      <div>
+        <table>
+          <tr><th>Partido</th><th>Boletas</th><th>Recaudo USD</th><th>Sin sección</th></tr>
+          <tr><td>LMF2026-M14</td><td>19</td><td>1 276</td><td>14</td></tr>
+          <tr><td>LMF2026-M15</td><td>22</td><td>1 008</td><td>6</td></tr>
+          <tr><td>CM2026-SF1</td><td>14</td><td>603</td><td>4</td></tr>
+          <tr><td>CM2026-Q2</td><td>12</td><td>458</td><td>2</td></tr>
+        </table>
+        <p class="nota">FLATTEN es un JOIN de la orden contra sus propios ítems: una orden
+        con 4 boletas produce 4 filas. Clave ausente → <code>NULL</code>, nunca error:
+        26/74 sin sección, 40/74 con teléfono, 19/74 con cuotas.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · DAG de Tasks =============================================== -->
+<section class="slide">
+  <div class="kicker">E5 · Orquestación nativa</div>
+  <div class="cuerpo">
+    <h2>Un DAG de dos tareas, sin Airflow</h2>
+    <div class="flujo" style="margin-bottom:1.2em">
+      <div class="nodo acc"><b>TASK_INGESTA_TICKETING</b><span>raíz · CRON 0 5 * * * America/Bogota · COPY INTO</span></div>
+      <div class="flecha">→ AFTER →</div>
+      <div class="nodo acc"><b>TASK_APLANAR_TICKETS</b><span>hija · sin reloj propio · INSERT OVERWRITE</span></div>
+    </div>
+    <div class="cols">
+      <div>
+        <ul class="lista">
+          <li>La hija se dispara cuando la raíz termina <strong>con éxito</strong>: dependencia lógica, no coincidencia de horarios.</li>
+          <li><code>INSERT OVERWRITE</code> y no <code>CREATE OR REPLACE</code>: una sentencia, conserva GRANTs y masking policies.</li>
+          <li>Activación de todo el grafo: <code>SYSTEM$TASK_DEPENDENTS_ENABLE</code>.</li>
+          <li><code>EXECUTE TASK</code> es privilegio <strong>de cuenta</strong> — ser dueño de la task no basta.</li>
+        </ul>
+      </div>
+      <pre><span class="c">-- TASK_HISTORY tras el disparo manual (hora Bogotá):</span>
+NAME                    STATE      INICIO        FIN
+TASK_INGESTA_TICKETING  <span class="ok">SUCCEEDED</span>  21:35:45.219  21:35:46.767
+TASK_APLANAR_TICKETS    <span class="ok">SUCCEEDED</span>  21:35:46.767  21:35:48.691
+TASK_INGESTA_TICKETING  SCHEDULED  <span class="c">próxima: 22-08 05:00</span>
+
+<span class="c">-- y la hija dejó STAGING consistente:</span>
+<span class="k">SELECT COUNT</span>(*) <span class="k">FROM</span> STG_VENTAS_TICKETS;  <span class="ok">-> 74</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · Administración del DAG ==================================== -->
+<section class="slide">
+  <div class="kicker">E5 · Administración real</div>
+  <div class="cuerpo">
+    <h2>Apagar un DAG tiene un orden.<br><span class="amber">No es el que uno cree.</span></h2>
+    <div class="cols">
+      <pre><span class="c">-- intento "natural": suspender la hija primero</span>
+<span class="k">ALTER TASK</span> TASK_APLANAR_TICKETS <span class="k">SUSPEND</span>;
+<span class="err">091421 (22000): Unable to update graph with root task
+TASK_INGESTA_TICKETING since that root task
+is not suspended.</span>
+
+<span class="c">-- orden correcto: la raíz primero, siempre</span>
+<span class="k">ALTER TASK</span> TASK_INGESTA_TICKETING <span class="k">SUSPEND</span>;  <span class="ok">-- OK</span>
+<span class="k">ALTER TASK</span> TASK_APLANAR_TICKETS   <span class="k">SUSPEND</span>;  <span class="ok">-- OK</span></pre>
+      <div>
+        <ul class="lista">
+          <li>El error es <strong>real</strong>, de nuestra cuenta — no teoría de la documentación.</li>
+          <li>Mientras la raíz siga <code>started</code>, el grafo está "en juego": nada del DAG se puede alterar.</li>
+          <li>Activar no tiene esa restricción: <code>TASK_DEPENDENTS_ENABLE</code> resuelve el orden solo.</li>
+          <li><code>TASK_HISTORY()</code> es la primera parada para depurar — aquí no hay logs de aplicación.</li>
+        </ul>
+        <p class="nota">Las tasks quedan suspendidas entre demos para no quemar crédito del
+        trial — el warehouse XSMALL con auto-suspend hace el resto.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 · RBAC ====================================================== -->
+<section class="slide">
+  <div class="kicker">E6 · RBAC</div>
+  <div class="cuerpo">
+    <h2>Quién ve qué — porque lo necesita,<br>no porque puede</h2>
+    <div class="cols">
+      <div>
+        <table>
+          <tr><th>Schema</th><th>Analista</th><th>Gerencia</th><th>Loader</th></tr>
+          <tr><td><code>RAW</code> (deportivo)</td><td class="amber">SELECT</td><td>—</td><td>escribe</td></tr>
+          <tr><td><code>RAW_JSON</code> (VARIANT)</td><td>—</td><td>—</td><td>escribe</td></tr>
+          <tr><td><code>STAGING</code></td><td class="amber">SELECT</td><td class="amber">SELECT</td><td>escribe</td></tr>
+        </table>
+        <p class="nota"><strong>Nadie de negocio entra a <code>RAW_JSON</code></strong>: el VARIANT crudo
+        contiene la PII sin enmascarar — abrirlo dejaría la política pintada en la pared.</p>
+      </div>
+      <div>
+        <pre><span class="k">USE ROLE</span> ROLE_GERENCIA_COMERCIAL;
+<span class="k">USE SECONDARY ROLES</span> NONE;
+<span class="k">SELECT</span> * <span class="k">FROM</span> TORNEOS_DB.RAW.PLAYERS;
+<span class="err">-> Schema 'TORNEOS_DB.RAW' does not exist
+   or not authorized.</span></pre>
+        <div class="panel">
+          <h3>Hallazgo propio</h3>
+          <p style="font-size:.9em">Los usuarios del trial nacen con
+          <code>DEFAULT_SECONDARY_ROLES=('ALL')</code>: la sesión suma los privilegios de
+          <em>todos</em> tus roles y el SELECT "prohibido" pasa igual. La demo honesta exige
+          <code>USE SECONDARY ROLES NONE</code>. El masking no depende de esto: evalúa
+          <code>CURRENT_ROLE()</code>, el rol primario.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 · Masking =================================================== -->
+<section class="slide">
+  <div class="kicker">E6 · Dynamic Data Masking — en vivo (Enterprise)</div>
+  <div class="cuerpo">
+    <h2>El mismo SELECT.<br>Tres roles, tres verdades.</h2>
+    <pre style="margin-bottom:1em"><span class="k">SELECT</span> COMPRADOR_NOMBRE, COMPRADOR_EMAIL, COMPRADOR_TELEFONO <span class="k">FROM</span> STG_VENTAS_TICKETS <span class="k">WHERE</span> COMPRADOR_TELEFONO <span class="k">IS NOT NULL</span>;
+
+<span class="c">-- ROLE_GERENCIA_COMERCIAL (dueña del dato de cliente)</span>
+Isabela Franco | <span class="ok">isabela.franco@hotmail.com</span> | <span class="ok">+57 302 815 2965</span>
+
+<span class="c">-- ROLE_ANALISTA_DEPORTIVO (analiza demanda, no identidades)</span>
+Isabela Franco | <span class="s">*****@hotmail.com</span>          | <span class="s">+57 302 *** ****</span>
+
+<span class="c">-- ACCOUNTADMIN (administrar la cuenta no es motivo para ver PII)</span>
+Isabela Franco | <span class="err">********</span>                   | <span class="err">*** *** ****</span></pre>
+    <div class="cols">
+      <p class="nota">La política se evalúa <strong>al vuelo</strong> en el plan de cada query — no hay
+      una segunda tabla enmascarada. Se ata una vez a la columna
+      (<code>MASK_EMAIL</code>, <code>MASK_TELEFONO</code>) y todo consumidor futuro hereda la protección.</p>
+      <p class="nota">El analista conserva <strong>dominio y prefijo</strong> — le sirven para analizar
+      canales — y pierde la identidad. NULL entra, NULL sale: la política no inventa datos.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 13 · Demo ====================================================== -->
+<section class="slide">
+  <div class="kicker">E9 · Demo en vivo</div>
+  <div class="cuerpo">
+    <h2>Guion de los 10 minutos</h2>
+    <div class="marcador">
+      <div class="cifra"><b>1</b><span>ELT + drift</span></div>
+      <div class="cifra"><b>2</b><span>DAG + history</span></div>
+      <div class="cifra"><b>3</b><span>roles + masking</span></div>
+    </div>
+    <ul class="lista">
+      <li><strong>Ingesta relacional:</strong> <code>uv run elt_neon_to_snowflake.py</code>; provocar drift en Neon (<code>ALTER TABLE</code>), verlo frenar con el DDL propuesto, aplicar el roll-forward y re-correr.</li>
+      <li><strong>Orquestación:</strong> <code>SYSTEM$TASK_DEPENDENTS_ENABLE</code> → <code>EXECUTE TASK</code> → <code>TASK_HISTORY()</code> con la cadena raíz→hija en SUCCEEDED → apagar en el orden correcto.</li>
+      <li><strong>Gobernanza:</strong> el mismo SELECT con <code>ROLE_GERENCIA_COMERCIAL</code>, <code>ROLE_ANALISTA_DEPORTIVO</code> y <code>ACCOUNTADMIN</code> — tres visibilidades distintas, en vivo.</li>
+    </ul>
+    <p class="nota">Todo corre contra la cuenta real del equipo (Enterprise Edition) —
+    los scripts del repo son exactamente los que se ejecutan.</p>
+  </div>
+</section>
+
+<!-- 14 · Cierre ==================================================== -->
+<section class="slide">
+  <div class="kicker">Cierre</div>
+  <div class="cuerpo">
+    <h2>Las 4 preguntas, respondidas<br>con evidencia</h2>
+    <div class="cols">
+      <div class="dosfilas">
+        <div class="panel"><h3>¿Cómo llegan los datos, y quién ejecuta?</h3>
+          <p style="font-size:.9em">ELT en Python con <code>uv</code>, carga masiva con <code>write_pandas</code>,
+          conectado como <code>TORNEOS_LOADER</code> — nunca <code>ACCOUNTADMIN</code>.</p></div>
+        <div class="panel"><h3>¿Y si el esquema cambia sin avisar?</h3>
+          <p style="font-size:.9em">El drift se detecta <strong>antes</strong> de cargar, con el
+          <code>ALTER TABLE</code> de roll-forward ya redactado. Caso provocado y corregido.</p></div>
+      </div>
+      <div class="dosfilas">
+        <div class="panel"><h3>¿Cómo entra el dato sin esquema fijo?</h3>
+          <p style="font-size:.9em">External Stage → <code>VARIANT</code> → <code>LATERAL FLATTEN</code> →
+          <code>STG_VENTAS_TICKETS</code>, refrescado por un DAG de Tasks nativo.</p></div>
+        <div class="panel"><h3>¿Quién puede ver qué?</h3>
+          <p style="font-size:.9em">Dos roles de negocio con GRANTs deliberados y masking dinámico:
+          el mismo SELECT devuelve tres resultados según el rol.</p></div>
+      </div>
+    </div>
+    <p class="nota" style="margin-top:1.4em">Repositorio: <code>github.com/acarmonag/cicd-bd</code> ·
+    evidencias en <code>docs/evidencias/momento2/</code> · decisiones en <code>docs/decisiones_momento2.md</code></p>
+  </div>
+</section>
+
+</div>
+
+<div class="zona izq" id="zizq" title="Anterior"></div>
+<div class="zona der" id="zder" title="Siguiente"></div>
+
+<footer class="pie">
+  <span class="partido">Torneos deportivos · Momento 2 · SI6010-5979</span>
+  <span class="tanteo num" id="tanteo">01 / 14</span>
+</footer>
+
+<script>
+  const slides = Array.from(document.querySelectorAll(".slide"));
+  const tanteo = document.getElementById("tanteo");
+  const barra  = document.getElementById("barra");
+  let i = Math.min(parseInt(location.hash.slice(1)) - 1 || 0, slides.length - 1);
+  if (i < 0 || isNaN(i)) i = 0;
+
+  function pinta(){
+    slides.forEach((s, k) => s.classList.toggle("activa", k === i));
+    tanteo.textContent = String(i + 1).padStart(2, "0") + " / " + slides.length;
+    barra.style.width = ((i + 1) / slides.length * 100) + "%";
+    history.replaceState(null, "", "#" + (i + 1));
+  }
+  function ir(d){ i = Math.max(0, Math.min(slides.length - 1, i + d)); pinta(); }
+
+  document.addEventListener("keydown", e => {
+    if (["ArrowRight", "PageDown", " "].includes(e.key)) { e.preventDefault(); ir(1); }
+    if (["ArrowLeft", "PageUp"].includes(e.key))         { e.preventDefault(); ir(-1); }
+    if (e.key === "Home") { i = 0; pinta(); }
+    if (e.key === "End")  { i = slides.length - 1; pinta(); }
+  });
+  document.getElementById("zizq").addEventListener("click", () => ir(-1));
+  document.getElementById("zder").addEventListener("click", () => ir(1));
+
+  let x0 = null;
+  document.addEventListener("touchstart", e => x0 = e.touches[0].clientX, {passive:true});
+  document.addEventListener("touchend", e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 60) ir(dx < 0 ? 1 : -1);
+    x0 = null;
+  }, {passive:true});
+
+  pinta();
+</script>
+</body>
+</html>
