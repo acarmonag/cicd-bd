@@ -1,0 +1,11 @@
+[project]
+name = "ingesta-torneos-snowflake"
+version = "0.1.0"
+description = "Momento 2 — ELT relacional de Neon (torneos deportivos) hacia la capa RAW de Snowflake"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas>=2.1.2,<3.0.0",
+    "psycopg2-binary>=2.9.12",
+    "python-dotenv>=1.2.2",
+    "snowflake-connector-python[pandas]>=4.7.2",
+]
