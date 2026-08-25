@@ -1,0 +1,367 @@
+[
+  {
+    "order_id": "TKA-20260807-0001",
+    "provider": "TicketAndes",
+    "purchased_at": "2026-08-02T20:24:00",
+    "channel": "taquilla",
+    "match": {
+      "match_id": 17,
+      "external_ref": "CM2026-Q2",
+      "home_team": "Cóndores de Bogotá",
+      "away_team": "Águilas de Bucaramanga",
+      "venue": "Estadio El Campín",
+      "kickoff": "2026-07-25T19:00:00"
+    },
+    "buyer": {
+      "full_name": "Manuela Villa",
+      "email": "manuela.villa@hotmail.com",
+      "document_id": "CC 269513056"
+    },
+    "payment": {
+      "method": "tarjeta_credito",
+      "total_usd": 37.0,
+      "installments": 3
+    },
+    "tickets": [
+      {
+        "ticket_code": "TKA-CM2026-Q2-0001-1",
+        "category": "preferencial",
+        "row": "H",
+        "seat": 40,
+        "price_usd": 37.0,
+        "section": "Occidental"
+      }
+    ]
+  },
+  {
+    "order_id": "TKA-20260807-0002",
+    "provider": "TicketAndes",
+    "purchased_at": "2026-08-01T07:07:00",
+    "channel": "taquilla",
+    "match": {
+      "match_id": 14,
+      "external_ref": "LMF2026-M14",
+      "home_team": "Pumas de Pereira",
+      "away_team": "Águilas de Bucaramanga",
+      "venue": "Estadio Hernán Ramírez Villegas",
+      "kickoff": "2026-06-13T15:30:00"
+    },
+    "buyer": {
+      "full_name": "Paula Andrea Vélez",
+      "email": "paula.andrea.velez@gmail.com",
+      "document_id": "CC 901223841"
+    },
+    "payment": {
+      "method": "efectivo",
+      "total_usd": 246.0
+    },
+    "tickets": [
+      {
+        "ticket_code": "TKA-LMF2026-M14-0002-1",
+        "category": "palco",
+        "row": "E",
+        "seat": 38,
+        "price_usd": 82.0
+      },
+      {
+        "ticket_code": "TKA-LMF2026-M14-0002-2",
+        "category": "palco",
+        "row": "E",
+        "seat": 7,
+        "price_usd": 82.0
+      },
+      {
+        "ticket_code": "TKA-LMF2026-M14-0002-3",
+        "category": "palco",
+        "row": "D",
+        "seat": 20,
+        "price_usd": 82.0
+      }
+    ]
+  },
+  {
+    "order_id": "TKA-20260807-0003",
+    "provider": "TicketAndes",
+    "purchased_at": "2026-08-02T03:24:00",
+    "channel": "web",
+    "match": {
+      "match_id": 16,
+      "external_ref": "CM2026-Q1",
+      "home_team": "Leones de Medellín",
+      "away_team": "Pumas de Pereira",
+      "venue": "Estadio Atanasio Girardot",
+      "kickoff": "2026-07-18T19:00:00"
+    },
+    "buyer": {
+      "full_name": "Daniela Osorio",
+      "email": "daniela.osorio@hotmail.com",
+      "document_id": "CC 392238464"
+    },
+    "payment": {
+      "method": "pse",
+      "total_usd": 54.0
+    },
+    "tickets": [
+      {
+        "ticket_code": "TKA-CM2026-Q1-0003-1",
+        "category": "general",
+        "row": "H",
+        "seat": 7,
+        "price_usd": 18.0,
+        "section": "Occidental"
+      },
+      {
+        "ticket_code": "TKA-CM2026-Q1-0003-2",
+        "category": "general",
+        "row": "C",
+        "seat": 1,
+        "price_usd": 18.0,
+        "section": "Occidental"
+      },
+      {
+        "ticket_code": "TKA-CM2026-Q1-0003-3",
+        "category": "general",
+        "row": "E",
+        "seat": 14,
+        "price_usd": 18.0,
+        "section": "Occidental"
+      }
+    ]
+  },
+  {
+    "order_id": "TKA-20260807-0004",
+    "provider": "TicketAndes",
+    "purchased_at": "2026-08-02T14:01:00",
+    "channel": "web",
+    "match": {
+      "match_id": 18,
+      "external_ref": "CM2026-Q3",
+      "home_team": "Tiburones de Cali",
+      "away_team": "Zorros de Manizales",
+      "venue": "Estadio Pascual Guerrero",
+      "kickoff": "2026-08-01T19:00:00"
+    },
+    "buyer": {
+      "full_name": "Isabela Franco",
+      "email": "isabela.franco@hotmail.com",
+      "document_id": "CC 578429212",
+      "phone": "+57 302 815 2965"
+    },
+    "payment": {
+      "method": "efectivo",
+      "total_usd": 74.0
+    },
+    "tickets": [
+      {
+        "ticket_code": "TKA-CM2026-Q3-0004-1",
+        "category": "preferencial",
+        "row": "B",
+        "seat": 12,
+        "price_usd": 37.0,
+        "section": "Norte"
+      },
+      {
+        "ticket_code": "TKA-CM2026-Q3-0004-2",
+        "category": "preferencial",
+        "row": "J",
+        "seat": 38,
+        "price_usd": 37.0,
+        "section": "Norte"
+      }
+    ]
+  },
+  {
+    "order_id": "TKA-20260807-0005",
+    "provider": "TicketAndes",
+    "purchased_at": "2026-08-02T19:53:00",
+    "channel": "taquilla",
+    "match": {
+      "match_id": 19,
+      "external_ref": "CM2026-SF1",
+      "home_team": "Leones de Medellín",
+      "away_team": "Cóndores de Bogotá",
+      "venue": "Estadio Atanasio Girardot",
+      "kickoff": "2026-08-08T19:00:00"
+    },
+    "buyer": {
+      "full_name": "Paula Andrea Vélez",
+      "email": "paula.andrea.velez@outlook.com",
+      "document_id": "CC 1096897919",
+      "phone": "+57 305 393 9356"
+    },
+    "payment": {
+      "method": "tarjeta_credito",
+      "total_usd": 328.0,
+      "installments": 6
+    },
+    "tickets": [
+      {
+        "ticket_code": "TKA-CM2026-SF1-0005-1",
+        "category": "palco",
+        "row": "G",
+        "seat": 28,
+        "price_usd": 82.0
+      },
+      {
+        "ticket_code": "TKA-CM2026-SF1-0005-2",
+        "category": "palco",
+        "row": "G",
+        "seat": 29,
+        "price_usd": 82.0
+      },
+      {
+        "ticket_code": "TKA-CM2026-SF1-0005-3",
+        "category": "palco",
+        "row": "F",
+        "seat": 38,
+        "price_usd": 82.0
+      },
+      {
+        "ticket_code": "TKA-CM2026-SF1-0005-4",
+        "category": "palco",
+        "row": "J",
+        "seat": 23,
+        "price_usd": 82.0
+      }
+    ]
+  },
+  {
+    "order_id": "TKA-20260807-0006",
+    "provider": "TicketAndes",
+    "purchased_at": "2026-07-31T22:15:00",
+    "channel": "app",
+    "match": {
+      "match_id": 15,
+      "external_ref": "LMF2026-M15",
+      "home_team": "Águilas de Bucaramanga",
+      "away_team": "Zorros de Manizales",
+      "venue": "Estadio Atanasio Girardot",
+      "kickoff": "2026-06-22T19:30:00"
+    },
+    "buyer": {
+      "full_name": "Gustavo Henao",
+      "email": "gustavo.henao@hotmail.com",
+      "document_id": "CC 346279479",
+      "phone": "+57 322 188 8561"
+    },
+    "payment": {
+      "method": "efectivo",
+      "total_usd": 148.0
+    },
+    "tickets": [
+      {
+        "ticket_code": "TKA-LMF2026-M15-0006-1",
+        "category": "preferencial",
+        "row": "A",
+        "seat": 18,
+        "price_usd": 37.0,
+        "section": "Occidental"
+      },
+      {
+        "ticket_code": "TKA-LMF2026-M15-0006-2",
+        "category": "preferencial",
+        "row": "F",
+        "seat": 34,
+        "price_usd": 37.0,
+        "section": "Occidental"
+      },
+      {
+        "ticket_code": "TKA-LMF2026-M15-0006-3",
+        "category": "preferencial",
+        "row": "C",
+        "seat": 9,
+        "price_usd": 37.0,
+        "section": "Oriental"
+      },
+      {
+        "ticket_code": "TKA-LMF2026-M15-0006-4",
+        "category": "preferencial",
+        "row": "B",
+        "seat": 19,
+        "price_usd": 37.0,
+        "section": "Oriental"
+      }
+    ]
+  },
+  {
+    "order_id": "TKA-20260807-0007",
+    "provider": "TicketAndes",
+    "purchased_at": "2026-08-04T04:36:00",
+    "channel": "app",
+    "match": {
+      "match_id": 14,
+      "external_ref": "LMF2026-M14",
+      "home_team": "Pumas de Pereira",
+      "away_team": "Águilas de Bucaramanga",
+      "venue": "Estadio Hernán Ramírez Villegas",
+      "kickoff": "2026-06-13T15:30:00"
+    },
+    "buyer": {
+      "full_name": "Gustavo Henao",
+      "email": "gustavo.henao@hotmail.com",
+      "document_id": "CC 939278251"
+    },
+    "payment": {
+      "method": "efectivo",
+      "total_usd": 164.0
+    },
+    "tickets": [
+      {
+        "ticket_code": "TKA-LMF2026-M14-0007-1",
+        "category": "palco",
+        "row": "K",
+        "seat": 9,
+        "price_usd": 82.0
+      },
+      {
+        "ticket_code": "TKA-LMF2026-M14-0007-2",
+        "category": "palco",
+        "row": "B",
+        "seat": 39,
+        "price_usd": 82.0
+      }
+    ]
+  },
+  {
+    "order_id": "TKA-20260807-0008",
+    "provider": "TicketAndes",
+    "purchased_at": "2026-08-06T07:48:00",
+    "channel": "app",
+    "match": {
+      "match_id": 17,
+      "external_ref": "CM2026-Q2",
+      "home_team": "Cóndores de Bogotá",
+      "away_team": "Águilas de Bucaramanga",
+      "venue": "Estadio El Campín",
+      "kickoff": "2026-07-25T19:00:00"
+    },
+    "buyer": {
+      "full_name": "Óscar Duque",
+      "email": "oscar.duque@hotmail.com",
+      "document_id": "CC 147486169",
+      "phone": "+57 318 128 3090"
+    },
+    "payment": {
+      "method": "pse",
+      "total_usd": 36.0
+    },
+    "tickets": [
+      {
+        "ticket_code": "TKA-CM2026-Q2-0008-1",
+        "category": "general",
+        "row": "G",
+        "seat": 32,
+        "price_usd": 18.0,
+        "section": "Oriental"
+      },
+      {
+        "ticket_code": "TKA-CM2026-Q2-0008-2",
+        "category": "general",
+        "row": "E",
+        "seat": 4,
+        "price_usd": 18.0,
+        "section": "Occidental"
+      }
+    ]
+  }
+]
