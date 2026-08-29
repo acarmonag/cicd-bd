@@ -1,0 +1,37 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Datos relacionales del sistema de torneos deportivos — extraídos de Neon
+      (PostgreSQL) por el ELT de Python (ingesta/elt_neon_to_snowflake.py), sin
+      transformar. Una tabla por entidad del modelo transaccional del Momento 1.
+    database: TORNEOS_DB
+    schema: RAW
+    tables:
+      - name: matches
+        description: "Partidos programados entre dos equipos dentro de un torneo. status controla el ciclo de vida: scheduled → in_progress → finished / cancelled."
+      - name: match_scores
+        description: "Marcador final de un partido. Solo existe para partidos con status = 'finished'. Relación 1:1 con matches."
+      - name: teams
+        description: "Equipos participantes, asociados a un deporte. Fuente: seed_neon.py, tabla teams de Neon."
+      - name: tournaments
+        description: "Torneos organizados por deporte y temporada. format indica la modalidad: liga, cup o grupo+eliminatoria."
+
+  - name: raw_json
+    description: >
+      Datos semi-estructurados del proveedor de ticketing TicketAndes — órdenes
+      de compra cargadas vía S3 External Stage a columna VARIANT. Una fila por
+      orden; las boletas individuales viven en el array anidado tickets.
+    database: TORNEOS_DB
+    schema: RAW_JSON
+    tables:
+      - name: raw_ticketing
+        description: "Órdenes de compra de boletas en formato VARIANT (JSON crudo). Requiere LATERAL FLATTEN para desanidar el array tickets."
+        columns:
+          - name: RAW_DATA
+            description: "Payload completo de la orden en VARIANT. Campos notables: order_id, match.match_id (FK a RAW.MATCHES.ID), tickets[] (array de boletas)."
+          - name: ARCHIVO
+            description: "Nombre del archivo JSON de origen (export semanal del proveedor)."
+          - name: CARGADO_EN
+            description: "Timestamp de cuando el COPY INTO cargó el archivo al stage."
