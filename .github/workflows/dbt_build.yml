@@ -20,7 +20,7 @@ on:
     - cron: "0 7 * * *"
   workflow_dispatch:
   push:
-    branches: [main, dev]
+    branches: [main, dev, ensayo-demo]
     paths:
       - "dbt/**"
       - ".github/workflows/dbt_build.yml"
