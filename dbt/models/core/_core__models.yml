@@ -1,0 +1,139 @@
+version: 2
+
+models:
+  - name: fct_rendimiento_equipos
+    description: >
+      Tabla de clasificación de equipos por torneo: victorias, empates, derrotas, goles
+      y puntos acumulados en partidos finalizados. Responde la pregunta: ¿cómo va cada
+      equipo en la tabla de posiciones de su torneo?
+      Grano: una fila por (equipo, torneo). Fuentes: stg_matches, stg_match_scores,
+      stg_teams, stg_tournaments (todas relacionales — capas Silver del Medallón).
+    columns:
+      - name: tournament_id
+        description: "Identificador del torneo."
+        data_tests:
+          - not_null
+      - name: nombre_torneo
+        description: "Nombre descriptivo del torneo (ej. Liga Metropolitana de Fútbol 2026)."
+        data_tests:
+          - not_null
+      - name: temporada
+        description: "Temporada del torneo (ej. 2026-I)."
+        data_tests:
+          - not_null
+      - name: formato
+        description: "Modalidad del torneo: league, cup o group+knockout."
+        data_tests:
+          - not_null
+      - name: team_id
+        description: "Identificador del equipo."
+        data_tests:
+          - not_null
+      - name: nombre_equipo
+        description: "Nombre del equipo (ej. Leones de Medellín)."
+        data_tests:
+          - not_null
+      - name: ciudad
+        description: "Ciudad de origen del equipo."
+        data_tests:
+          - not_null
+      - name: partidos_jugados
+        description: "Número de partidos finalizados en los que participó el equipo en este torneo."
+        data_tests:
+          - not_null
+      - name: victorias
+        description: "Partidos en los que el equipo anotó más goles que el rival."
+        data_tests:
+          - not_null
+      - name: empates
+        description: "Partidos que terminaron con el mismo marcador para ambos equipos."
+        data_tests:
+          - not_null
+      - name: derrotas
+        description: "Partidos en los que el rival anotó más goles que el equipo."
+        data_tests:
+          - not_null
+      - name: goles_favor
+        description: "Total de goles anotados por el equipo en el torneo."
+        data_tests:
+          - not_null
+      - name: goles_contra
+        description: "Total de goles recibidos por el equipo en el torneo."
+        data_tests:
+          - not_null
+      - name: diferencia_goles
+        description: "Goles a favor menos goles en contra. Desempate secundario en la tabla."
+        data_tests:
+          - not_null
+      - name: puntos
+        description: "Puntos acumulados: 3 por victoria, 1 por empate, 0 por derrota."
+        data_tests:
+          - not_null
+      - name: posicion
+        description: "Posición en la tabla del torneo, ordenada por puntos y diferencia de goles."
+        data_tests:
+          - not_null
+
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - tournament_id
+            - team_id
+
+  - name: fct_recaudo_por_partido
+    description: >
+      Recaudo de la venta de tickets por partido y categoría de boleta. Responde la
+      pregunta: ¿cuánto dinero generó cada partido en taquilla y cuántas boletas se
+      vendieron por tipo?
+      Grano: una fila por (partido, categoría de ticket).
+      CRUZA DOS FUENTES: stg_ventas_tickets (origen JSON — TicketAndes) y
+      stg_matches + stg_teams (origen relacional — Neon/RAW).
+    columns:
+      - name: match_id
+        description: "Identificador del partido. FK a stg_matches.match_id y a la plataforma de TicketAndes."
+        data_tests:
+          - not_null
+      - name: fecha_partido
+        description: "Fecha y hora programada del partido."
+        data_tests:
+          - not_null
+      - name: estado_partido
+        description: "Estado del partido al momento del build (scheduled, in_progress, finished)."
+        data_tests:
+          - not_null
+      - name: equipo_local
+        description: "Nombre del equipo que juega como local."
+        data_tests:
+          - not_null
+      - name: equipo_visitante
+        description: "Nombre del equipo visitante."
+        data_tests:
+          - not_null
+      - name: categoria
+        description: "Categoría de las boletas agrupadas: general, preferencial o palco."
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['general', 'preferencial', 'palco']
+      - name: total_ordenes
+        description: "Número de órdenes de compra distintas que incluyeron boletas de esta categoría para este partido."
+        data_tests:
+          - not_null
+      - name: total_boletas
+        description: "Número total de boletas vendidas en esta categoría para este partido."
+        data_tests:
+          - not_null
+      - name: total_usd
+        description: "Recaudo total en dólares por esta categoría en este partido."
+        data_tests:
+          - not_null
+      - name: precio_promedio_usd
+        description: "Precio promedio por boleta en esta categoría para este partido."
+        data_tests:
+          - not_null
+
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - match_id
+            - categoria

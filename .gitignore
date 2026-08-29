@@ -17,6 +17,13 @@ Thumbs.db
 *.swp
 *.swo
 
+# dbt — artefactos y credenciales locales
+dbt/profiles.yml
+dbt/target/
+dbt/dbt_packages/
+dbt/.env
+dbt/.user.yml
+
 # Logs y artefactos
 *.log
 *.tmp

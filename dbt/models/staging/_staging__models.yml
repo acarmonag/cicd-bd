@@ -1,0 +1,158 @@
+version: 2
+
+models:
+  - name: stg_matches
+    description: "Partidos del sistema de torneos con cast de columnas y nombres en español. Una fila por partido."
+    columns:
+      - name: match_id
+        description: "Identificador único del partido (PK de RAW.MATCHES)."
+        data_tests:
+          - unique
+          - not_null
+      - name: tournament_id
+        description: "Torneo al que pertenece el partido."
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_tournaments')
+              field: tournament_id
+      - name: home_team_id
+        description: "Equipo local."
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_teams')
+              field: team_id
+      - name: away_team_id
+        description: "Equipo visitante."
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_teams')
+              field: team_id
+      - name: status
+        description: "Estado del ciclo de vida del partido."
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['scheduled', 'in_progress', 'finished', 'cancelled']
+      - name: scheduled_at
+        description: "Fecha y hora programada del partido."
+        data_tests:
+          - not_null
+
+  - name: stg_match_scores
+    description: "Marcadores finales de partidos terminados. Una fila por partido finalizado."
+    columns:
+      - name: score_id
+        description: "Identificador único del marcador (PK de RAW.MATCH_SCORES)."
+        data_tests:
+          - unique
+          - not_null
+      - name: match_id
+        description: "Partido al que corresponde el marcador."
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              to: ref('stg_matches')
+              field: match_id
+      - name: goles_local
+        description: "Goles del equipo local al finalizar el partido."
+        data_tests:
+          - not_null
+      - name: goles_visitante
+        description: "Goles del equipo visitante al finalizar el partido."
+        data_tests:
+          - not_null
+
+  - name: stg_teams
+    description: "Equipos participantes en el sistema de torneos. Una fila por equipo."
+    columns:
+      - name: team_id
+        description: "Identificador único del equipo (PK de RAW.TEAMS)."
+        data_tests:
+          - unique
+          - not_null
+      - name: nombre_equipo
+        description: "Nombre del equipo."
+        data_tests:
+          - not_null
+      - name: ciudad
+        description: "Ciudad de origen del equipo."
+        data_tests:
+          - not_null
+
+  - name: stg_tournaments
+    description: "Torneos organizados por deporte y temporada. Una fila por torneo."
+    columns:
+      - name: tournament_id
+        description: "Identificador único del torneo (PK de RAW.TOURNAMENTS)."
+        data_tests:
+          - unique
+          - not_null
+      - name: nombre_torneo
+        description: "Nombre del torneo."
+        data_tests:
+          - not_null
+      - name: temporada
+        description: "Temporada del torneo (ej. '2026-I', '2026-II')."
+        data_tests:
+          - not_null
+      - name: formato
+        description: "Modalidad del torneo."
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['league', 'cup', 'group+knockout']
+
+  - name: stg_ventas_tickets
+    description: >
+      Boletas de TicketAndes desnormalizadas: una fila por boleta (no por orden).
+      Fuente: RAW_JSON.RAW_TICKETING con LATERAL FLATTEN sobre el array tickets.
+    columns:
+      - name: ticket_code
+        description: "Código único de la boleta emitida por TicketAndes."
+        data_tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: "Identificador de la orden de compra que generó esta boleta."
+        data_tests:
+          - not_null
+      - name: match_id
+        description: "Partido al que pertenece la boleta. FK a stg_matches.match_id."
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_matches')
+              field: match_id
+      - name: categoria
+        description: "Categoría de la boleta."
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['general', 'preferencial', 'palco']
+      - name: precio_usd
+        description: "Precio de la boleta en dólares."
+        data_tests:
+          - not_null
+          # Justificación de negocio: ningún ticket del torneo debería superar
+          # USD 500. Si supera, hay un error de tipado en el export de TicketAndes
+          # (ej. el total_usd de la orden quedó en el campo precio de boleta).
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 500
+              strictly: false
+      - name: comprada_en
+        description: "Timestamp de la compra de la orden."
+        data_tests:
+          - not_null
+
+    # Justificación de negocio: el torneo tiene 19 partidos (15 liga + 4 copa).
+    # Un conteo de 0 boletas indica fallo total de la ingesta JSON; más de 5000
+    # indica que el mismo archivo se cargó múltiples veces sin limpiar la tabla.
+    data_tests:
+      - dbt_expectations.expect_table_row_count_to_be_between:
+          min_value: 1
+          max_value: 5000

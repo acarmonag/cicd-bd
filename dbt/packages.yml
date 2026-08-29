@@ -1,0 +1,9 @@
+# metaplane/dbt_expectations es el fork activo del paquete original calogica.
+# dbt_utils se declara explícitamente aunque dbt_expectations lo trae como
+# dependencia transitiva — declararlo aquí garantiza la versión y lo hace
+# disponible para tests directos (ej. unique_combination_of_columns).
+packages:
+  - package: dbt-labs/dbt_utils
+    version: [">=1.0.0", "<2.0.0"]
+  - package: metaplane/dbt_expectations
+    version: [">=0.10.0", "<0.11.0"]
