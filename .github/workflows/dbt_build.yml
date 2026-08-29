@@ -1,0 +1,96 @@
+# ---------------------------------------------------------------------------
+# Momento 3 — Transformación y Modelado con dbt sobre Snowflake
+#
+# Qué hace: instala dependencias del proyecto dbt con uv, resuelve los paquetes
+# (dbt deps) y corre `dbt build` — materializa todos los modelos Silver y Gold
+# y ejecuta todos los tests declarados en un solo comando.
+# Si un test falla, dbt build retorna código de salida != 0 y el job falla
+# visiblemente en GitHub Actions — sin tests silenciosos.
+#
+# Secretos requeridos (Settings → Secrets and variables → Actions):
+#   SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_PASSWORD, SNOWFLAKE_ROLE,
+#   SNOWFLAKE_WAREHOUSE, SNOWFLAKE_DATABASE, SNOWFLAKE_SCHEMA
+# ---------------------------------------------------------------------------
+
+name: dbt Build — Torneos
+
+on:
+  schedule:
+    # 07:00 UTC — después de que el ELT relacional y la ingesta JSON hayan corrido.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main, dev]
+    paths:
+      - "dbt/**"
+      - ".github/workflows/dbt_build.yml"
+
+# Serializar runs para evitar que dos ejecuciones simultáneas se pisen la
+# materialización de un modelo a mitad de escritura en Snowflake.
+concurrency:
+  group: dbt-torneos
+  cancel-in-progress: false
+
+env:
+  # No llamarla DBT_PROJECT_DIR: dbt-core reconoce esa variable como equivalente
+  # a --project-dir y la resuelve dos veces cuando también se usa working-directory,
+  # produciendo "Path ... does not exist". Lección aprendida en Sesión 7.
+  PROJECT_DIR: dbt
+
+jobs:
+  build:
+    name: dbt build sobre Snowflake
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+
+      - name: Sincronizar el entorno del proyecto dbt
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: uv sync --locked
+
+      # profiles.yml nunca se versiona — el runner parte del example.
+      # Los valores reales los inyectan los env_var() del step de dbt build.
+      - name: Crear profiles.yml desde la plantilla
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: cp profiles.yml.example profiles.yml
+
+      - name: dbt deps
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: uv run dbt deps --profiles-dir .
+
+      # dbt build = dbt run + dbt test, respetando el orden del DAG.
+      # Si un test de un modelo Silver falla, los Gold que dependen de él
+      # ni se intentan — falla rápido, en la capa donde ocurrió el problema.
+      - name: dbt build
+        working-directory: ${{ env.PROJECT_DIR }}
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+        run: uv run dbt build --profiles-dir . --target dev
+
+      - name: Resumen del run
+        if: always()
+        run: |
+          {
+            echo "## dbt build — resultado"
+            echo ""
+            echo "| Campo | Valor |"
+            echo "|---|---|"
+            echo "| Proyecto | \`${PROJECT_DIR}\` |"
+            echo "| Commit | \`${{ github.sha }}\` |"
+            echo "| Disparado por | \`${{ github.event_name }}\` |"
+            echo "| Estado | \`${{ job.status }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
