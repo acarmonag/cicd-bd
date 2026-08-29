@@ -1,0 +1,36 @@
+name: "torneos_dbt"
+version: "1.0.0"
+config-version: 2
+
+profile: "torneos_dbt"
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+seed-paths: ["seeds"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# ---------------------------------------------------------------------------
+# Arquitectura Medallón sobre TORNEOS_DB en Snowflake
+# ---------------------------------------------------------------------------
+# El macro generate_schema_name (macros/generate_schema_name.sql) hace que
+# el valor de +schema se use directamente como nombre del schema en Snowflake,
+# sin concatenar el schema por defecto del perfil — así los modelos aterrizan
+# en TORNEOS_DB.STAGING y TORNEOS_DB.CORE, no en TORNEOS_DB.RAW_STAGING.
+models:
+  torneos_dbt:
+    staging:
+      # Silver: cast y rename únicamente. VIEW porque es una relectura barata
+      # de la fuente cruda — no hay agregación que valga persistir todavía.
+      +materialized: view
+      +schema: STAGING
+    core:
+      # Gold: joins y agregaciones listas para consumo analítico. TABLE para
+      # que un analista no vuelva a pagar el costo del join en cada consulta.
+      +materialized: table
+      +schema: CORE
