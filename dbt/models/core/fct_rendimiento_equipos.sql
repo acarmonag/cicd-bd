@@ -1,5 +1,5 @@
 -- Pregunta de negocio: ¿Cuál es el desempeño de cada equipo por torneo?
--- Grano: una fila por (equipo, torneo).
+-- Grano: una fila por (equipo, torneo). Actualizado con columna victorias_consecutivas pendiente.
 -- Fuentes: stg_matches + stg_match_scores + stg_teams + stg_tournaments
 --          (todas relacionales — capas del Medallón vía ref()).
 with matches as (
