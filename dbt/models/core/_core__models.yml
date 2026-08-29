@@ -69,7 +69,7 @@ models:
         description: "Puntos acumulados: 3 por victoria, 1 por empate, 0 por derrota."
         data_tests:
           - not_null
-      - name: pct_victorias                                    ← desde aquí
+      - name: pct_victorias
         description: "Porcentaje de partidos ganados sobre partidos jugados. Comparable entre equipos con distinto número de partidos disputados."
         data_tests:
           - not_null
