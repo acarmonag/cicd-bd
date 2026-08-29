@@ -1,14 +1,14 @@
 -- ============================================================================
 -- 00_dbt_setup.sql — Permisos Snowflake para el proyecto dbt (Momento 3)
 --
--- Ejecutar UNA VEZ como SYSADMIN desde Snowsight, DESPUÉS de haber corrido
+-- Ejecutar UNA VEZ como ACCOUNTADMIN desde Snowsight, DESPUÉS de haber corrido
 -- snowflake/setup/01_setup_snowflake.sql del Momento 2.
 --
 -- Crea el schema CORE (capa Gold del Medallón) y otorga a TORNEOS_LOADER
 -- los privilegios necesarios para que dbt build funcione sin ACCOUNTADMIN.
 -- ============================================================================
 
-USE ROLE SYSADMIN;
+USE ROLE ACCOUNTADMIN;
 USE DATABASE TORNEOS_DB;
 USE WAREHOUSE WH_TORNEOS;
 
