@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El torneo llega a Gold</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* ------------------------------------------------------------------
+     Mismo tema del Momento 2 — marcador de estadio nocturno — para que
+     las dos sustentaciones se lean como un mismo partido, en tiempos
+     distintos. Todos los colores se pintan explícitos: la página
+     sostiene su propio fondo sobre cualquier host, claro u oscuro.
+  ------------------------------------------------------------------ */
+  :root{
+    --campo:      #0b1512;   /* verde-negro, césped de noche          */
+    --tablero:    #122019;   /* superficie de paneles                 */
+    --tablero-2:  #16281f;   /* superficie elevada                    */
+    --linea:      #26402f;   /* líneas de cal, atenuadas              */
+    --cal:        #eef5ee;   /* texto principal, blanco de cal        */
+    --gris:       #9db3a2;   /* texto secundario                      */
+    --ambar:      #f2b63c;   /* foco/acento: luz de reflector         */
+    --ambar-dim:  #b9862a;
+    --ok:         #62c98d;   /* semántico consola                     */
+    --err:        #e8756a;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --sans: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    --disp: "Archivo", "Arial Narrow", Impact, sans-serif;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background: var(--campo);
+    color: var(--cal);
+    font-family: var(--sans);
+    font-size: clamp(14px, 1.35vw, 19px);
+    line-height: 1.55;
+    overflow: hidden;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none;
+    background: repeating-linear-gradient(90deg,
+      rgba(255,255,255,.012) 0 7vw, rgba(0,0,0,.05) 7vw 14vw);
+  }
+
+  .deck{ height:100%; position:relative; }
+  .slide{
+    position:absolute; inset:0;
+    display:none;
+    flex-direction:column;
+    padding: clamp(1.4rem, 4.5vh, 3.2rem) clamp(1.4rem, 5vw, 4.5rem) 4rem;
+    overflow:auto;
+  }
+  .slide.activa{ display:flex; animation: entra .28s ease-out; }
+  @keyframes entra{ from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:none;} }
+  @media (prefers-reduced-motion: reduce){ .slide.activa{ animation:none; } }
+
+  /* ---- cabecera de cada slide: eyebrow + divisor + ponente ---- */
+  .kicker{
+    display:flex; align-items:center; gap:.8em; margin-bottom:1.1em;
+    font-family:var(--mono); font-size:.72em; letter-spacing:.14em;
+    text-transform:uppercase;
+  }
+  .kicker .txt{ color:var(--ambar); white-space:nowrap; }
+  .kicker .linea{ flex:1; height:1px; background:var(--linea); }
+  .kicker .ponente{
+    color:var(--campo); background:var(--gris); white-space:nowrap;
+    border-radius:999px; padding:.28em .8em; letter-spacing:.1em;
+  }
+  h1,h2{ font-family:var(--disp); text-wrap:balance; }
+  h1{
+    font-weight:900; font-stretch:115%;
+    font-size:clamp(2.4rem, 7.2vw, 5.4rem);
+    line-height:1.02; letter-spacing:-.01em; text-transform:uppercase;
+  }
+  h2{
+    font-weight:800; font-stretch:110%;
+    font-size:clamp(1.5rem, 3.6vw, 2.7rem);
+    line-height:1.08; margin-bottom:.7em;
+  }
+  .sub{ color:var(--gris); max-width:34em; }
+  .amber{ color:var(--ambar); }
+  strong{ color:var(--cal); font-weight:600; }
+
+  .cuerpo{ flex:1; display:flex; flex-direction:column; justify-content:center; min-height:0; }
+  .cols{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(1rem,3vw,2.6rem); align-items:start; }
+  .cols3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:clamp(.8rem,2.4vw,1.6rem); align-items:start; }
+  @media (max-width:760px){ .cols, .cols3{ grid-template-columns:1fr; } }
+
+  .panel{
+    background:var(--tablero); border:1px solid var(--linea);
+    border-radius:10px; padding:1em 1.2em;
+  }
+  .panel + .panel{ margin-top:.8em; }
+  .panel h3{
+    font-family:var(--mono); font-size:.7em; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--gris); margin-bottom:.6em;
+  }
+  .panel.acc{ border-color:var(--ambar-dim); }
+  .panel.acc h3{ color:var(--ambar); }
+  ul.lista{ list-style:none; }
+  ul.lista li{ padding:.34em 0 .34em 1.4em; position:relative; }
+  ul.lista li::before{
+    content:"▸"; position:absolute; left:.2em; color:var(--ambar);
+  }
+
+  code, pre{ font-family:var(--mono); }
+  code{ background:var(--tablero-2); border:1px solid var(--linea);
+        border-radius:5px; padding:.08em .4em; font-size:.88em; }
+  pre{
+    background:#081009; border:1px solid var(--linea); border-radius:10px;
+    padding:1em 1.2em; font-size:clamp(.6rem, 1.02vw, .82rem);
+    line-height:1.5; overflow-x:auto; color:#cfe3d2;
+  }
+  pre .c{ color:#6f8b76; }
+  pre .k{ color:var(--ambar); }
+  pre .s{ color:#9fd0ff; }
+  pre .ok{ color:var(--ok); }
+  pre .err{ color:var(--err); }
+
+  table{ border-collapse:collapse; width:100%; font-size:.9em; }
+  th,td{ text-align:left; padding:.42em .7em; border-bottom:1px solid var(--linea); }
+  th{ font-family:var(--mono); font-size:.7em; letter-spacing:.1em;
+      text-transform:uppercase; color:var(--gris); }
+  td{ font-variant-numeric: tabular-nums; }
+  .num{ font-variant-numeric: tabular-nums; }
+
+  .chips{ display:flex; flex-wrap:wrap; gap:.5em; }
+  .chip{
+    font-family:var(--mono); font-size:.72em; letter-spacing:.06em;
+    border:1px solid var(--linea); border-radius:999px;
+    padding:.3em .9em; color:var(--gris); background:var(--tablero);
+  }
+  .chip.on{ color:var(--campo); background:var(--ambar); border-color:var(--ambar); font-weight:500; }
+
+  .marcador{ display:flex; gap:1.2em; flex-wrap:wrap; margin:1.2em 0; }
+  .cifra{
+    background:var(--tablero); border:1px solid var(--linea); border-radius:10px;
+    padding:.7em 1.1em; min-width:7.5em;
+  }
+  .cifra b{
+    display:block; font-family:var(--disp); font-weight:900; font-stretch:110%;
+    font-size:2em; color:var(--ambar); font-variant-numeric:tabular-nums; line-height:1.1;
+  }
+  .cifra span{ font-family:var(--mono); font-size:.66em; letter-spacing:.12em;
+               text-transform:uppercase; color:var(--gris); }
+
+  .flujo{ display:flex; align-items:stretch; gap:.6em; flex-wrap:wrap; }
+  .nodo{
+    background:var(--tablero-2); border:1px solid var(--linea); border-radius:10px;
+    padding:.7em 1em; text-align:center; flex:1; min-width:8em;
+  }
+  .nodo b{ display:block; font-family:var(--mono); font-size:.8em; color:var(--cal); }
+  .nodo span{ font-size:.72em; color:var(--gris); }
+  .nodo.acc{ border-color:var(--ambar-dim); }
+  .nodo.acc b{ color:var(--ambar); }
+  .flecha{ align-self:center; color:var(--ambar); font-size:1.2em; }
+
+  .pie{
+    position:fixed; left:0; right:0; bottom:0;
+    display:flex; align-items:center; gap:1em;
+    padding:.55em clamp(1.4rem,5vw,4.5rem);
+    font-family:var(--mono); font-size:.72rem; color:var(--gris);
+    background:linear-gradient(transparent, rgba(8,14,10,.92) 40%);
+    z-index:5;
+  }
+  .pie .partido{ letter-spacing:.1em; text-transform:uppercase; }
+  .pie .tanteo{ margin-left:auto; color:var(--ambar); letter-spacing:.15em; }
+  .barra{ position:fixed; top:0; left:0; height:3px; background:var(--ambar); z-index:6;
+          transition:width .25s ease; }
+  .zona{ position:fixed; top:0; bottom:0; width:14vw; z-index:4; cursor:pointer; }
+  .zona.izq{ left:0; } .zona.der{ right:0; }
+  .ayuda{ position:fixed; right:clamp(1.4rem,5vw,4.5rem); top:1em; z-index:5;
+          font-family:var(--mono); font-size:.68rem; color:var(--gris); opacity:.75; }
+  :focus-visible{ outline:2px solid var(--ambar); outline-offset:3px; }
+
+  .firma{ display:flex; gap:2.4em; flex-wrap:wrap; margin-top:2em; }
+  .firma div b{ display:block; font-weight:600; }
+  .firma div span{ font-family:var(--mono); font-size:.74em; color:var(--gris); }
+  .nota{ font-size:.85em; color:var(--gris); margin-top:1em; }
+  .dosfilas{ display:grid; gap: .9em; }
+
+  /* ---- notas del ponente: oculto por defecto, alterna con N ---- */
+  .notas{
+    display:none; margin-top:1.1em; padding:.9em 1.1em;
+    background:#081109; border:1px dashed var(--ambar-dim); border-radius:10px;
+    font-size:.82em; color:#cfe0d3; max-width:74ch;
+  }
+  .notas b{
+    display:block; font-family:var(--mono); font-size:.72em; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--ambar); margin-bottom:.5em;
+  }
+  body.modo-notas .notas{ display:block; }
+  body.modo-notas .barra{ background:var(--ok); }
+</style>
+</head>
+<body>
+<div class="barra" id="barra"></div>
+<div class="ayuda">← → o clic para navegar · N notas del ponente</div>
+
+<div class="deck" id="deck">
+
+<!-- 1 · Portada ==================================================== -->
+<section class="slide">
+  <div class="cuerpo">
+    <div class="kicker"><span class="txt">Momento 3 · Transformación y Modelado (dbt) · 29-08-2026</span><span class="linea"></span></div>
+    <h1>El torneo llega<br>a <span class="amber">Gold</span></h1>
+    <p class="sub" style="margin-top:1em">El pipeline completo, de Neon y TicketAndes hasta modelos
+      Gold en Snowflake: arquitectura Medallón con dbt, calidad de datos declarativa y
+      automatización versionada con GitHub Actions.</p>
+    <div class="chips" style="margin-top:1.6em">
+      <span class="chip on">dbt-core</span><span class="chip">dbt-snowflake</span>
+      <span class="chip">dbt-expectations</span><span class="chip">GitHub Actions</span>
+      <span class="chip">Snowflake</span>
+    </div>
+    <div class="firma">
+      <div><b>Antonio Carmona</b><span>@acarmonag</span></div>
+      <div><b>Miguel Quijano</b><span>@mquijanoj09</span></div>
+      <div><b>Andrés Prada</b><span>@Pradita777</span></div>
+    </div>
+    <div class="notas">
+      <b>Notas del ponente — Miguel abre</b>
+      Buenos días. Somos el equipo del sistema de torneos deportivos: Antonio, Andrés y yo,
+      Miguel. Hoy cerramos el módulo con el pipeline completo — desde Neon y TicketAndes, que
+      ya vimos en los Momentos 1 y 2, hasta modelos Gold listos para consumo analítico en
+      Snowflake, con dbt, pruebas de calidad y automatización con GitHub Actions.
+    </div>
+  </div>
+</section>
+
+<!-- 2 · El encargo ================================================= -->
+<section class="slide">
+  <div class="kicker"><span class="txt">El encargo · caso de negocio</span><span class="linea"></span><span class="ponente">Miguel · 2 min</span></div>
+  <div class="cuerpo">
+    <h2>Los datos ya llegan a Snowflake.<br>Nadie los puede usar todavía.</h2>
+    <div class="cols">
+      <div>
+        <p>Los Momentos 1 y 2 dejaron los datos crudos aterrizando de forma automática:
+        las tablas del torneo en <code>RAW</code>, las órdenes de TicketAndes en
+        <code>RAW_JSON</code>. Pero siguen en su forma de origen — sin nombres de negocio,
+        sin cruces y sin ninguna garantía de que los números sean correctos.</p>
+        <p class="nota">El encargo de este momento es cerrar ese camino, respondiendo dos
+        preguntas reales del negocio: ¿cómo va cada equipo en la tabla de posiciones?, y
+        ¿cuánto recaudó cada partido en taquilla, por categoría de boleta?</p>
+      </div>
+      <div class="panel">
+        <h3>Las 3 preguntas que respondemos hoy</h3>
+        <ul class="lista">
+          <li>Si el negocio pide una métrica nueva, ¿cuál es el camino desde el <strong>commit</strong> hasta el modelo Gold actualizado, y <strong>cuánto tarda</strong>?</li>
+          <li>¿Cómo sé que los <strong>números</strong> de un modelo Gold son correctos?</li>
+          <li>¿Qué se rompe si la fuente <strong>cambia sin avisar</strong>, y cómo me entero?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="notas">
+      <b>Notas del ponente — Miguel</b>
+      Los Momentos 1 y 2 dejaron los datos crudos aterrizando en Snowflake de forma
+      automática: las tablas relacionales del torneo en RAW, y las órdenes de TicketAndes en
+      RAW_JSON. Pero ahí nadie los puede usar todavía — están en su forma de origen, sin
+      nombres de negocio, sin cruces y sin ninguna garantía de que los números sean correctos.
+      El encargo de este momento es cerrar ese camino. Y lo hacemos para responder dos
+      preguntas concretas de nuestro negocio: ¿cómo va cada equipo en la tabla de posiciones
+      de su torneo?, y ¿cuánto recaudó cada partido en taquilla, y cuántas boletas se
+      vendieron por categoría? Pero detrás hay tres preguntas más generales que todo este
+      pipeline tiene que poder responder con evidencia, no de palabra: si el negocio pide una
+      métrica nueva, ¿cuál es el camino desde el commit hasta el modelo Gold actualizado, y
+      cuánto tarda? ¿Cómo sabemos que los números son correctos? Y si una fuente cambia sin
+      avisar, ¿qué se rompe, y cómo nos enteramos? Eso es lo que mostramos en los próximos
+      quince minutos: arquitectura, pruebas y automatización — no solo modelos SQL sueltos.
+    </div>
+  </div>
+</section>
+
+<!-- 3 · Arquitectura Medallón ======================================= -->
+<section class="slide">
+  <div class="kicker"><span class="txt">C1 · Arquitectura Medallón</span><span class="linea"></span><span class="ponente">Miguel · 3 min</span></div>
+  <div class="cuerpo">
+    <h2>Dos capas, una responsabilidad cada una</h2>
+    <div class="cols">
+      <div class="dosfilas">
+        <div class="flujo">
+          <div class="nodo"><b>RAW</b><span>relacional · Neon</span></div>
+          <div class="flecha">→</div>
+          <div class="nodo acc"><b>staging</b><span>Silver · view · <code style="font-size:.85em">source()</code></span></div>
+        </div>
+        <div class="flujo">
+          <div class="nodo"><b>RAW_JSON</b><span>VARIANT · TicketAndes</span></div>
+          <div class="flecha">→</div>
+          <div class="nodo acc"><b>staging</b><span>FLATTEN · cast · rename</span></div>
+        </div>
+        <div class="flujo">
+          <div class="nodo acc" style="flex:2"><b>staging (Silver)</b><span>5 modelos, un view por fuente</span></div>
+          <div class="flecha">→</div>
+          <div class="nodo acc" style="border-color:var(--ambar); flex:2"><b>core (Gold)</b><span>2 modelos · table · <code style="font-size:.85em">ref()</code></span></div>
+        </div>
+        <p class="nota"><code>core</code> nunca consulta <code>source()</code> directo — solo
+        <code>ref()</code> sobre Silver. Ambas capas aterrizan en <code>TORNEOS_DB</code>
+        (<code>.STAGING</code> / <code>.CORE</code>) por un macro propio de nombrado de
+        esquema, sin clics manuales en Snowsight.</p>
+      </div>
+      <div class="panel">
+        <h3>Lineage graph — <code>dbt docs generate</code></h3>
+        <p style="font-size:.92em">De un vistazo: cero modelos huérfanos, y las dos fuentes
+        —la relacional de Neon y la JSON de TicketAndes— convergen en un mismo Gold.</p>
+        <ul class="lista" style="margin-top:.6em">
+          <li><code>stg_matches</code>, <code>stg_match_scores</code>, <code>stg_teams</code>, <code>stg_tournaments</code>, <code>stg_ventas_tickets</code></li>
+          <li>→ <code>fct_rendimiento_equipos</code></li>
+          <li>→ <code>fct_recaudo_por_partido</code></li>
+        </ul>
+        <p class="nota">Captura del grafo real en <code>docs/evidencias/momento3/</code>.</p>
+      </div>
+    </div>
+    <div class="notas">
+      <b>Notas del ponente — Miguel</b>
+      La arquitectura es Medallón clásica, dos capas. Staging es la capa Silver: un modelo
+      por fuente cruda, solo cast y rename, cero joins y cero lógica de negocio — ahí vive el
+      source(). Core es la capa Gold: ahí están los joins, las agregaciones y las reglas del
+      negocio, y solo se referencia con ref(), nunca con source() directo — está forzado por
+      convención del proyecto, no solo por disciplina. Staging materializa como vista, barata
+      de releer; core materializa como tabla, para que el analista no vuelva a pagar el join
+      en cada consulta. Y aquí está el lineage completo generado por dbt docs generate: se ve
+      de un vistazo que no hay modelos huérfanos, y que las dos fuentes —la relacional de
+      Neon y la JSON de TicketAndes— convergen en el Gold de recaudo.
+    </div>
+  </div>
+</section>
+
+<!-- 4 · Modelos Gold ================================================ -->
+<section class="slide">
+  <div class="kicker"><span class="txt">C2 · Modelos Gold y lógica de negocio</span><span class="linea"></span><span class="ponente">Miguel · 3 min</span></div>
+  <div class="cuerpo">
+    <h2>Dos modelos, dos preguntas de negocio</h2>
+    <div class="cols">
+      <div class="panel">
+        <h3>fct_rendimiento_equipos</h3>
+        <p style="font-size:.92em"><strong>¿Cómo va cada equipo en la tabla de posiciones de
+        su torneo?</strong></p>
+        <ul class="lista" style="margin-top:.6em">
+          <li>Grano: una fila por (equipo, torneo).</li>
+          <li>Fuentes: 100% relacionales — <code>stg_matches</code>, <code>stg_match_scores</code>, <code>stg_teams</code>, <code>stg_tournaments</code>.</li>
+          <li>Puntos, victorias, empates, diferencia de gol y <code>row_number()</code> para la posición.</li>
+        </ul>
+      </div>
+      <div class="panel acc">
+        <h3>fct_recaudo_por_partido — cruza 2 orígenes</h3>
+        <p style="font-size:.92em"><strong>¿Cuánto recaudó cada partido en taquilla, y
+        cuántas boletas se vendieron por categoría?</strong></p>
+        <ul class="lista" style="margin-top:.6em">
+          <li>Grano: una fila por (partido, categoría de boleta).</li>
+          <li><code>stg_ventas_tickets</code> (JSON, TicketAndes) + <code>stg_matches</code> / <code>stg_teams</code> (relacional, Neon).</li>
+          <li>Unidos por <code>match_id</code> — el proveedor externo ya lo conocía.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="nota" style="margin-top:1em">El grano de ambos no es una promesa: cada uno tiene
+    un test <code>dbt_utils.unique_combination_of_columns</code> que lo prueba.</p>
+    <div class="notas">
+      <b>Notas del ponente — Miguel</b>
+      El primero, fct_rendimiento_equipos, es la tabla de posiciones: una fila por equipo y
+      torneo, con puntos, diferencia de gol y la posición calculada con row_number().
+      Responde una pregunta 100% deportiva y usa solo fuentes relacionales. El segundo cruza
+      dos orígenes de datos distintos del propio proyecto — requisito explícito de este
+      momento: fct_recaudo_por_partido une las boletas de TicketAndes, que vienen del JSON
+      aplanado en el Momento 2, con los partidos y equipos que vienen de Neon. El punto de
+      unión es el match_id, que el proveedor externo ya conocía porque el organizador
+      registra el partido en su plataforma al abrir la venta. Responde: ¿cuánto recaudó cada
+      partido en taquilla, y cuántas boletas se vendieron por categoría? En ambos modelos, el
+      grano no es una promesa: está probado con un test de combinación única.
+    </div>
+  </div>
+</section>
+
+<!-- 5 · Calidad de datos ============================================ -->
+<section class="slide">
+  <div class="kicker"><span class="txt">C3 · Pruebas de calidad de datos</span><span class="linea"></span><span class="ponente">Miguel · cierra</span></div>
+  <div class="cuerpo">
+    <h2>Genéricos para integridad,<br><span class="amber">dbt-expectations</span> para negocio</h2>
+    <div class="cols">
+      <div>
+        <ul class="lista">
+          <li><code>unique</code> + <code>not_null</code> en cada llave primaria de Silver y Gold.</li>
+          <li><code>relationships</code> en cada llave foránea — incluida boleta → partido.</li>
+          <li><code>accepted_values</code> en <code>status</code>, <code>formato</code>, <code>categoria</code>.</li>
+          <li><code>unique_combination_of_columns</code> asegurando el grano de los dos Gold.</li>
+        </ul>
+        <p class="nota">Esto solo dice que las llaves no se rompen — no que los números
+        tengan sentido de negocio. Para eso, dos tests de <code>dbt-expectations</code>.</p>
+      </div>
+      <div class="panel acc">
+        <h3>2 tests dbt-expectations, con razón de negocio</h3>
+        <table>
+          <tr><th>Test</th><th>Regla</th><th>Por qué</th></tr>
+          <tr><td><code>expect_column_values_to_be_between</code></td><td>precio_usd 0–500</td><td>&gt;500 = total de orden mal tipado como precio de boleta</td></tr>
+          <tr><td><code>expect_table_row_count_to_be_between</code></td><td>1–5000 filas</td><td>19 partidos: 0 = ingesta caída, &gt;5000 = archivo duplicado</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="notas">
+      <b>Notas del ponente — Miguel</b>
+      Sobre integridad estructural tenemos lo esperado: unique y not_null en cada llave
+      primaria, relationships en cada llave foránea —incluida la boleta contra el partido— y
+      accepted_values en los campos de estado y categoría. Pero eso solo dice que las llaves
+      no se rompen, no que los números tengan sentido de negocio. Por eso agregamos dos tests
+      de dbt-expectations, cada uno con una razón de negocio detrás, no porque el paquete lo
+      permita. El precio de una boleta tiene que estar entre 0 y 500 dólares — si aparece
+      más, es casi seguro que el export mezcló el total de la orden con el precio de una sola
+      boleta. Y el conteo de filas de boletas tiene que estar entre 1 y 5000 — nuestro torneo
+      tiene 19 partidos: cero boletas es la ingesta JSON fallando por completo, y más de 5000
+      es el mismo archivo cargado dos veces sin limpiar la tabla. Con esto le paso la palabra
+      a Andrés para la automatización y la demo en vivo.
+    </div>
+  </div>
+</section>
+
+<!-- 6 · GitHub Actions =============================================== -->
+<section class="slide">
+  <div class="kicker"><span class="txt">C4 · Automatización con GitHub Actions</span><span class="linea"></span><span class="ponente">Andrés · abre</span></div>
+  <div class="cuerpo">
+    <h2>Un commit en <code style="font-size:.75em">dbt/</code> dispara <span class="amber">dbt build</span></h2>
+    <div class="cols">
+      <pre><span class="k">on:</span>
+  <span class="k">push:</span> {branches: [main, dev], paths: [<span class="s">"dbt/**"</span>]}
+  <span class="k">workflow_dispatch:</span>
+  <span class="k">schedule:</span> [{cron: <span class="s">"0 7 * * *"</span>}]  <span class="c"># tras el ELT + JSON</span>
+
+<span class="c"># dbt build = dbt run + dbt test, en orden del DAG.</span>
+<span class="c"># Si un test Silver falla, los Gold ni se intentan.</span>
+uv sync --locked
+cp profiles.yml.example profiles.yml
+uv run dbt deps --profiles-dir .
+uv run dbt build --profiles-dir . --target dev</pre>
+      <div>
+        <ul class="lista">
+          <li>Credenciales de Snowflake como <strong>Secrets de GitHub</strong> — nunca en el repositorio.</li>
+          <li><code>profiles.yml.example</code> es la plantilla; los valores llegan por <code>env_var()</code>.</li>
+          <li><code>concurrency</code> serializa runs — dos ejecuciones no se pisan a mitad de escritura.</li>
+        </ul>
+        <p class="nota">Y ahora se los mostramos corriendo de verdad, no en una diapositiva.</p>
+      </div>
+    </div>
+    <div class="notas">
+      <b>Notas del ponente — Andrés</b>
+      Ahora el turno técnico. Este workflow, dbt_build.yml, se dispara solo con cualquier
+      cambio dentro de la carpeta dbt/, además de poder correrse manualmente o por cron todos
+      los días a las 7am UTC. Instala el entorno con uv, resuelve los paquetes con dbt deps,
+      y corre dbt build — que es dbt run más dbt test respetando el orden del grafo: si un
+      test de un modelo Silver falla, los modelos Gold que dependen de él ni se intentan. Las
+      credenciales de Snowflake viven como Secrets de GitHub, nunca en el repositorio — el
+      runner arranca desde profiles.yml.example y las inyecta con env_var(). Y ahora se los
+      muestro corriendo de verdad, no en una diapositiva.
+    </div>
+  </div>
+</section>
+
+<!-- 7 · Demo en vivo ================================================= -->
+<section class="slide">
+  <div class="kicker"><span class="txt">C4 + C5 · Demo en vivo — el corazón de la evaluación</span><span class="linea"></span><span class="ponente">Andrés · 7 min</span></div>
+  <div class="cuerpo">
+    <h2>Un cambio real: commit → Actions → tabla en Snowflake</h2>
+    <div class="marcador">
+      <div class="cifra"><b>1</b><span>editar el modelo Gold</span></div>
+      <div class="cifra"><b>2</b><span>commit + push</span></div>
+      <div class="cifra"><b>3</b><span>Actions → Snowflake</span></div>
+    </div>
+    <div class="cols">
+      <ul class="lista">
+        <li>Agregar o modificar una columna real en un modelo <code>core/</code>, con una pregunta de negocio detrás.</li>
+        <li><code>git commit</code> + <code>git push</code> a la rama de trabajo.</li>
+        <li>Pestaña <strong>Actions</strong> de GitHub: <code>dbt build</code> se dispara solo, sin llamarlo a mano.</li>
+        <li>Snowsight: consultar la tabla y mostrar la columna nueva con datos reales.</li>
+      </ul>
+      <div class="panel">
+        <h3>Plan B</h3>
+        <p style="font-size:.9em">Si el runner tarda o el trial de Snowflake falla en el
+        momento: corrida previa reciente + captura de la tabla ya actualizada, sin fingir que
+        es en vivo. La idea es no necesitarlo.</p>
+      </div>
+    </div>
+    <div class="notas">
+      <b>Notas del ponente — Andrés (guion de acciones, no monólogo)</b>
+      Este es el corazón de la evaluación, así que lo hacemos en vivo y sobre la cuenta real.
+      Primero les muestro el modelo tal como está hoy en el repositorio. Ahora agrego —o
+      modifico— una columna con una pregunta de negocio real detrás; explico cuál y por qué.
+      Hago commit y push a la rama. Nos vamos a la pestaña Actions de GitHub: aquí se dispara
+      dbt build automáticamente, sin que nadie lo llame a mano. Mientras corre, muestro los
+      logs — noten que respeta el orden del DAG. Y ahora, en Snowsight, consulto la tabla y
+      ahí está la columna nueva, con datos reales, sin que nadie haya tocado Snowflake
+      directamente. Si algo del entorno no responde a tiempo, tenemos la corrida de respaldo
+      capturada — pero la idea es no necesitarla.
+    </div>
+  </div>
+</section>
+
+<!-- 8 · Retrospectiva ================================================ -->
+<section class="slide">
+  <div class="kicker"><span class="txt">Retrospectiva</span><span class="linea"></span><span class="ponente">Antonio · 3 min</span></div>
+  <div class="cuerpo">
+    <h2>Qué costó, qué haríamos distinto,<br>qué queda pendiente</h2>
+    <div class="cols">
+      <div class="dosfilas">
+        <div class="panel"><h3>Lo más difícil</h3>
+          <p style="font-size:.9em">No fue el SQL de los Gold: fue la automatización.
+          <code>DBT_PROJECT_DIR</code> colisiona con una variable que dbt-core ya reconoce
+          como <code>--project-dir</code> y la resuelve dos veces junto con
+          <code>working-directory</code> — el runner fallaba con un path inexistente. Y el
+          setup de Snowflake necesitó <code>ACCOUNTADMIN</code>: el rol de servicio del
+          Momento 2 no alcanzaba para todo lo que dbt necesita crear.</p></div>
+        <div class="panel"><h3>Qué haríamos distinto</h3>
+          <p style="font-size:.9em">Escribir los tests de <code>dbt-expectations</code> junto
+          con cada modelo Gold, no después — pensamos los límites de negocio (los 500
+          dólares, las 5000 filas) más tarde de lo que debimos.</p></div>
+      </div>
+      <div class="panel acc">
+        <h3>Fuera de alcance a propósito</h3>
+        <p style="font-size:.9em">No es lo que falta: es lo que el propio módulo dejó fuera
+        porque no se enseñó en este capítulo.</p>
+        <ul class="lista" style="margin-top:.6em">
+          <li>Modelos incrementales</li>
+          <li>Capa de entrega / dashboard (Streamlit)</li>
+          <li>Orquestadores externos (Airflow, Dagster)</li>
+          <li>Streaming / tiempo real</li>
+        </ul>
+        <p class="nota">La conversación natural para seguir, una vez el batch es confiable.</p>
+      </div>
+    </div>
+    <div class="notas">
+      <b>Notas del ponente — Antonio</b>
+      Para cerrar, la retrospectiva. Lo más difícil no fue el SQL de los modelos Gold — fue
+      el detalle de la automatización. Documentamos en el propio workflow un error real que
+      nos costó tiempo: si la variable de entorno del proyecto se llama DBT_PROJECT_DIR,
+      dbt-core la reconoce como equivalente a --project-dir y, combinada con
+      working-directory en el step, la resuelve dos veces y el runner falla con un path que
+      no existe. Tuvimos que renombrarla. Y en el setup de Snowflake corregimos el rol con el
+      que se crean los objetos base a ACCOUNTADMIN, porque el rol de servicio del Momento 2
+      no alcanzaba para todo lo que dbt necesita crear. Si lo hiciéramos de nuevo,
+      escribiríamos los tests de dbt-expectations al mismo tiempo que cada modelo Gold, no
+      después. Y queda pendiente todo lo que el propio módulo dejó fuera a propósito: modelos
+      incrementales, una capa de entrega o dashboard, orquestadores externos como Airflow, y
+      streaming. No lo evaluamos porque no se enseñó en este capítulo — pero es la
+      conversación natural para seguir, una vez el pipeline batch ya es confiable.
+    </div>
+  </div>
+</section>
+
+<!-- 9 · Cierre ======================================================= -->
+<section class="slide">
+  <div class="kicker"><span class="txt">Cierre</span><span class="linea"></span><span class="ponente">Antonio</span></div>
+  <div class="cuerpo">
+    <h2>Las tres preguntas,<br>respondidas con evidencia</h2>
+    <div class="cols3">
+      <div class="panel"><h3>¿Cuál es el camino, y cuánto tarda?</h3>
+        <p style="font-size:.88em">Push a <code>dbt/</code> → GitHub Actions dispara
+        <code>dbt build</code> → modelos y tests corren en orden del DAG → tabla actualizada
+        en Snowflake, en minutos, sin pasos manuales.</p></div>
+      <div class="panel"><h3>¿Cómo sé que los números son correctos?</h3>
+        <p style="font-size:.88em">Tests genéricos sobre todas las llaves + dos
+        <code>dbt-expectations</code> con razón de negocio + grano garantizado con
+        <code>unique_combination_of_columns</code>.</p></div>
+      <div class="panel"><h3>¿Qué se rompe, y cómo me entero?</h3>
+        <p style="font-size:.88em"><code>dbt build</code> falla visible y rápido en la capa
+        donde ocurrió el problema — GitHub Actions lo marca en rojo, no un número
+        silenciosamente equivocado.</p></div>
+    </div>
+    <p class="nota" style="margin-top:1.4em">Repositorio: <code>github.com/acarmonag/cicd-bd</code> ·
+    proyecto dbt en <code>dbt/</code> · evidencias en <code>docs/evidencias/momento3/</code></p>
+    <div class="notas">
+      <b>Notas del ponente — Antonio</b>
+      Con esto respondemos las tres preguntas con las que abrimos: el camino de un commit a
+      un Gold actualizado es automático y trazable; sabemos que los números son correctos
+      porque están probados, no porque confiamos en ellos; y si una fuente cambia sin avisar,
+      el pipeline falla visible en la capa donde ocurrió el problema, no en silencio tres
+      capas más abajo.
+    </div>
+  </div>
+</section>
+
+<!-- 10 · Preguntas =================================================== -->
+<section class="slide">
+  <div class="kicker"><span class="txt">Preguntas · 10 min</span><span class="linea"></span></div>
+  <div class="cuerpo">
+    <h2>A quién preguntarle qué</h2>
+    <table>
+      <tr><th>Tema</th><th>Responde</th></tr>
+      <tr><td>Caso de negocio y arquitectura Medallón</td><td><strong>Miguel</strong></td></tr>
+      <tr><td>Automatización, GitHub Actions y Snowflake</td><td><strong>Andrés</strong></td></tr>
+      <tr><td>Pruebas de calidad y retrospectiva</td><td><strong>Antonio</strong></td></tr>
+    </table>
+    <p class="nota" style="margin-top:1em">Preguntas sobre la demo o el pipeline como sistema:
+    los tres respondemos juntos.</p>
+    <div class="notas">
+      <b>Notas del ponente — Antonio</b>
+      Quedamos abiertos a preguntas. Miguel puede profundizar en el caso de negocio y la
+      arquitectura Medallón; Andrés en la automatización y todo lo de Snowflake; y yo en las
+      pruebas de calidad y las decisiones que tomamos en el camino. Adelante.
+    </div>
+  </div>
+</section>
+
+</div>
+
+<div class="zona izq" id="zizq" title="Anterior"></div>
+<div class="zona der" id="zder" title="Siguiente"></div>
+
+<footer class="pie">
+  <span class="partido">Torneos deportivos · Momento 3 · SI6010-5979</span>
+  <span class="tanteo num" id="tanteo">01 / 10</span>
+</footer>
+
+<script>
+  const slides = Array.from(document.querySelectorAll(".slide"));
+  const tanteo = document.getElementById("tanteo");
+  const barra  = document.getElementById("barra");
+  let i = Math.min(parseInt(location.hash.slice(1)) - 1 || 0, slides.length - 1);
+  if (i < 0 || isNaN(i)) i = 0;
+
+  function pinta(){
+    slides.forEach((s, k) => s.classList.toggle("activa", k === i));
+    tanteo.textContent = String(i + 1).padStart(2, "0") + " / " + slides.length;
+    barra.style.width = ((i + 1) / slides.length * 100) + "%";
+    history.replaceState(null, "", "#" + (i + 1));
+  }
+  function ir(d){ i = Math.max(0, Math.min(slides.length - 1, i + d)); pinta(); }
+
+  document.addEventListener("keydown", e => {
+    if (["ArrowRight", "PageDown", " "].includes(e.key)) { e.preventDefault(); ir(1); }
+    if (["ArrowLeft", "PageUp"].includes(e.key))         { e.preventDefault(); ir(-1); }
+    if (e.key === "Home") { i = 0; pinta(); }
+    if (e.key === "End")  { i = slides.length - 1; pinta(); }
+    if (e.key === "n" || e.key === "N") { document.body.classList.toggle("modo-notas"); }
+  });
+  document.getElementById("zizq").addEventListener("click", () => ir(-1));
+  document.getElementById("zder").addEventListener("click", () => ir(1));
+
+  let x0 = null;
+  document.addEventListener("touchstart", e => x0 = e.touches[0].clientX, {passive:true});
+  document.addEventListener("touchend", e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 60) ir(dx < 0 ? 1 : -1);
+    x0 = null;
+  }, {passive:true});
+
+  pinta();
+</script>
+</body>
+</html>
