@@ -1,5 +1,5 @@
 -- Pregunta de negocio: ¿Cuál es el desempeño de cada equipo por torneo?
--- Grano: una fila por (equipo, torneo). Actualizado con columna victorias_consecutivas pendiente.
+-- Grano: una fila por (equipo, torneo).
 -- Fuentes: stg_matches + stg_match_scores + stg_teams + stg_tournaments
 --          (todas relacionales — capas del Medallón vía ref()).
 with matches as (
@@ -83,6 +83,7 @@ select
     c.goles_contra,
     c.diferencia_goles,
     c.puntos,
+    round(c.victorias::float / nullif(c.partidos_jugados, 0) * 100, 1) as pct_victorias,
     row_number() over (
         partition by c.tournament_id
         order by c.puntos desc, c.diferencia_goles desc, c.goles_favor desc
