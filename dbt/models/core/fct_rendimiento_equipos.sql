@@ -83,6 +83,7 @@ select
     c.goles_contra,
     c.diferencia_goles,
     c.puntos,
+    round(c.victorias::float / nullif(c.partidos_jugados, 0) * 100, 1) as pct_victorias,
     row_number() over (
         partition by c.tournament_id
         order by c.puntos desc, c.diferencia_goles desc, c.goles_favor desc

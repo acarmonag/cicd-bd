@@ -69,6 +69,14 @@ models:
         description: "Puntos acumulados: 3 por victoria, 1 por empate, 0 por derrota."
         data_tests:
           - not_null
+      - name: pct_victorias
+        description: "Porcentaje de partidos ganados sobre partidos jugados. Comparable entre equipos con distinto número de partidos disputados."
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100
+              strictly: false
       - name: posicion
         description: "Posición en la tabla del torneo, ordenada por puntos y diferencia de goles."
         data_tests:
